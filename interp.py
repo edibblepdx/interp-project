@@ -19,6 +19,7 @@ emptyTune: Tune_t = ()
 CHROMATIC = ("C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B")
 REST = "R"
 
+# this function is unused for now
 def extendTune(pitch: Pitch, duration: Duration, tune: Tune_t) -> Tune_t:
     return tune + ((pitch, duration),)
 
@@ -400,14 +401,40 @@ def evalInEnv(env: Env[Literal], e:Expr) -> bool:
             # join two tunes
             match (evalInEnv(env, l), evalInEnv(env, r)):
                 case (Tune(l), Tune(r)):
-                    return l + r
+                    return Tune(l + r)
                 case _:
                     raise EvalError("non-joinable type")
 
 def run(e: Expr):
     print(f"running {e}")
     try:
-        print(f"result: {eval(e)}")
+        match eval(e):
+            case Tune(t):
+
+                track    = 0
+                channel  = 0
+                time     = 0   # In beats
+                tempo    = 250 # In BPM
+                volume   = 100 # 0-127, as per the MIDI standard
+
+                MyMIDI = MIDIFile(1)
+                MyMIDI.addTempo(track, time, tempo)
+
+                for (p, d) in t:
+                    try:
+                        pitch = CHROMATIC.index(p) + 60
+                        MyMIDI.addNote(track, channel, pitch, time, d, volume)
+                    except:
+                        pass
+
+                    time = time + d
+
+                with open("tune.mid", "wb") as output_file:
+                    MyMIDI.writeFile(output_file)
+
+                print(f"result: {t}")
+            case o:
+                print(f"result: {o}")
     except EvalError as err:
         print(err)
 
@@ -419,3 +446,16 @@ if __name__ == "__main__":
     run(Mul(Lit(Tune((("A", 5), ("B", 3),))), Lit(-2)))
     run(Add(Lit(Tune((("A", 5), ("B", 3),))), Lit(2)))
     run(Add(Lit(Tune((("R", 5), ("D", 3),))), Lit(2)))
+
+    # Killer Queen (like the first two verses--I tried)
+    run(Lit(Tune((
+        ("A", 3), ("A", 3), ("D", 1), ("D", 2), ("C", 3), ("D", 1), ("A", 2),
+        ("E", 2), ("D", 2), ("E", 1), ("F", 2), ("E", 1), ("D", 1), ("D", 2),
+        ("D", 3), ("D", 3), ("C", 3), ("D", 2), ("A", 2), ("A", 2),
+        ("E", 2), ("E", 2), ("E", 1), ("E", 3), ("F", 1), ("G", 1), ("A", 2),
+        ("C", 2), ("A", 1), ("A", 2), ("G", 1), ("F", 1), ("G", 2),
+        ("E", 3), ("F", 1), ("F", 3), ("F", 2), ("E", 1), ("D", 2), ("E", 1),
+        ("D", 1), ("C#", 1), ("D", 1), ("C#", 2), ("C#", 2), 
+        ("C", 1), ("C", 1), ("C", 1), ("C", 1),
+        ("C#", 2), ("C#", 1), ("A", 1), ("A", 1), ("G", 1),
+    ))))
