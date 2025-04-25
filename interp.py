@@ -476,18 +476,30 @@ if __name__ == "__main__":
     print("joins")
     run(Join(Lit(Tune((("A", 1),))), Lit(Tune((("B", 2),)))))
     run(Join(Lit(Tune((("A", 1),))), Lit(Tune((("B", 2), ("C", 3))))))
+    try:
+        eval(Join(Lit(2), Lit(4)))
+    except:
+        print("Join exception expected (good)")
     print()
 
     # Multiply (change duration)
     print("multiply")
     run(Mul(Lit(Tune((("A", 5), ("B", 3),))), Lit(2)))
     run(Mul(Lit(Tune((("A", 5), ("B", 3),))), Lit(-2)))
+    try:
+        eval(Mul(Lit(Tune((("A", 1),))), Lit(Tune((("A", 1),)))))
+    except:
+        print("Mul exception expected (good)")
     print()
 
     # Add (transpose pitch)
     print("add")
     run(Add(Lit(Tune((("A", 5), ("B", 3),))), Lit(2)))
     run(Add(Lit(Tune((("R", 5), ("D", 3),))), Lit(-2)))
+    try:
+        eval(Add(Lit(Tune((("A", 1),))), Lit(Tune((("A", 1),)))))
+    except:
+        print("Add exception expected (good)")
     print()
 
     # Equality
@@ -518,8 +530,6 @@ if __name__ == "__main__":
         ("C", 1), ("C", 1), ("C", 1), ("C", 1),
         ("C#", 2), ("C#", 1), ("A", 1), ("A", 1), ("G", 1),
     ))))
-
-    os.system('vlc tune.mid')
 
     """Description of Domain Specific Extension
 
@@ -554,3 +564,32 @@ if __name__ == "__main__":
     Add(Lit(Tune((("A", 2),)), Lit(-2))
         => Tune((("G", 2),))
     """
+
+    # test Gt, Leq, Geq
+    # -----------------
+    print()
+    assert(eval(Gt(Lit(5), Lit(4))) == True)
+    assert(eval(Gt(Lit(4), Lit(5))) == False)
+    try:
+        eval(Gt(Lit(True), Lit(False)))
+    except:
+        print("Gt exception expected (good)")
+
+    assert(eval(Leq(Lit(5), Lit(4))) == False)
+    assert(eval(Leq(Lit(4), Lit(5))) == True)
+    assert(eval(Leq(Lit(4), Lit(4))) == True)
+    try:
+        eval(Leq(Lit(True), Lit(False)))
+    except:
+        print("Leq exception expected (good)")
+
+    assert(eval(Geq(Lit(5), Lit(4))) == True)
+    assert(eval(Geq(Lit(4), Lit(5))) == False)
+    assert(eval(Geq(Lit(4), Lit(4))) == True)
+    try:
+        eval(Geq(Lit(True), Lit(False)))
+    except:
+        print("Geq exception expected (good)")
+
+    # Play MIDI demo
+    os.system('vlc tune.mid')
