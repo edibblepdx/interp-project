@@ -14,21 +14,21 @@ type Note_t = tuple[Pitch, Duration]
 type Tune_t = tuple[Note_t, ...]
 emptyTune: Tune_t = ()
 
-# map notes to midi numbers on octave 3
+# C-Major scale
 # https://computermusicresource.com/midikeys.html
-DEGREES = {
-    "C": 60,
-    "D": 62,
-    "E": 64,
-    "F": 65,
-    "G": 67,
-    "A": 69,
-    "B": 71,
-    "R": None, # Rest
-}
+CHROMATIC = ("C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B")
+REST = "R"
 
 def extendTune(pitch: Pitch, duration: Duration, tune: Tune_t) -> Tune_t:
     return tune + ((pitch, duration),)
+
+def transposePitch(pitch: Pitch, half_steps: int):
+    try:
+        index = CHROMATIC.index(pitch)
+        new_index = (index + half_steps) % 12
+        return CHROMATIC[new_index]
+    except:
+        return REST
 # -----------------------------------------------
 
 type Literal = int | bool | Tune
@@ -45,7 +45,7 @@ class Tune:
     """{Str, Int} Note"""
     tune: Tune_t
     def __str__(self) -> str:
-        return ",".join(f"({p}, {d})" for (p, d) in self.tune)
+        return f"T'({",".join(f"({p}, {d})" for (p, d) in self.tune)},)"
 
 # DOMAIN SPECIFIC EXTENSION
 @dataclass
@@ -203,9 +203,6 @@ def isInt(*args):
 def isBool(*args):
     return all(type(x) is bool for x in args)
 
-def isTune(*args):
-    return all
-
 def lookupEnv[V](name: str, env: Env[V]) -> V :
     '''Return the first value bound to name in the input environment env
        (or raise an exception if there is no such binding)'''
@@ -238,6 +235,11 @@ def evalInEnv(env: Env[Literal], e:Expr) -> bool:
             match (evalInEnv(env, l), evalInEnv(env, r)):
                 case (l, r) if isInt(l, r):
                     return l + r
+                # DOMAIN SPECIFIC EXTENSION
+                # shift each note by the specified number of half-steps
+                case(Tune(l), r) if isInt(r):
+                    new_notes = tuple((transposePitch(p, r), d) for (p, d) in l)
+                    return Tune(new_notes)
                 case _:
                     raise EvalError("addition of non-integers")
 
@@ -252,6 +254,17 @@ def evalInEnv(env: Env[Literal], e:Expr) -> bool:
             match (evalInEnv(env, l), evalInEnv(env, r)):
                 case (l, r) if isInt(l, r):
                     return l * r
+                # DOMAIN SPECIFIC EXTENSION
+                # change duration of each note by inverse of r if positive
+                # else if negative scale by abs(r)
+                case (Tune(l), r) if isInt(r):
+                    if r == 0:
+                        raise EvalError("divide by zero")
+                    if r > 0:
+                        new_notes = tuple((p, d // r) for (p, d) in l)
+                    else:
+                        new_notes = tuple((p, d * abs(r)) for (p, d) in l)
+                    return Tune(new_notes)
                 case _:
                     raise EvalError("multiplication of non-integers")
 
@@ -384,6 +397,7 @@ def evalInEnv(env: Env[Literal], e:Expr) -> bool:
 
         case Join(l, r):
             # DOMAIN SPECIFIC EXTENSION
+            # join two tunes
             match (evalInEnv(env, l), evalInEnv(env, r)):
                 case (Tune(l), Tune(r)):
                     return l + r
@@ -398,6 +412,10 @@ def run(e: Expr):
         print(err)
 
 if __name__ == "__main__":
-    # Lit(Tune((("A", 1)))) has a lot of parens so be careful
+    # Tune((("A", 1),)) has a lot of parens so be careful
     run(Lit(Tune((("A", 1),))))
     run(Join(Lit(Tune((("A", 1),))), Lit(Tune((("B", 2),)))))
+    run(Mul(Lit(Tune((("A", 5), ("B", 3),))), Lit(2)))
+    run(Mul(Lit(Tune((("A", 5), ("B", 3),))), Lit(-2)))
+    run(Add(Lit(Tune((("A", 5), ("B", 3),))), Lit(2)))
+    run(Add(Lit(Tune((("R", 5), ("D", 3),))), Lit(2)))
