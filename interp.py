@@ -3,6 +3,7 @@
 # NOTE: midiutil is included as suggested in the project information
 from midiutil import MIDIFile # version 1.2.1
 
+import os # to play the midi
 from dataclasses import dataclass
 from typing import Any
 
@@ -325,18 +326,39 @@ def evalInEnv(env: Env[Literal], e:Expr) -> bool:
 
         # Equality Operators
         # ------------------
+        # Always false if types don't match
 
         case Eq(l, r):
-            (l, r) = (evalInEnv(env, l), evalInEnv(env, r))
-            if type(l) != type(r):
-                return False
-            return l == r
+            match (evalInEnv(env, l), evalInEnv(env, r)):
+                # DOMAIN SPECIFIC EXTENSION
+                # pure equality
+                case (Tune(l), Tune(r)):
+                    if len(l) != len(r):
+                        return False
+                    for (l, r) in zip(l, r):
+                        if l != r:
+                            return False
+                    return True
+                case (l, r):
+                    if type(l) != type(r):
+                        return False
+                    return l == r
 
         case Neq(l, r):
-            (l, r) = (evalInEnv(env, l), evalInEnv(env, r))
-            if type(l) != type(r):
-                return False
-            return l != r
+            match (evalInEnv(env, l), evalInEnv(env, r)):
+                # DOMAIN SPECIFIC EXTENSION
+                # pure equality
+                case (Tune(l), Tune(r)):
+                    if len(l) != len(r):
+                        return True
+                    for (l, r) in zip(l, r):
+                        if l != r:
+                            return True
+                    return False
+                case (l, r):
+                    if type(l) != type(r):
+                        return False
+                    return l != r
 
         # Relational Operators
         # --------------------
@@ -440,12 +462,43 @@ def run(e: Expr):
 
 if __name__ == "__main__":
     # Tune((("A", 1),)) has a lot of parens so be careful
+
+    # Tests
+    # -----
+
+    # Lit
+    print("lit")
     run(Lit(Tune((("A", 1),))))
+    run(Lit(Tune((("A", 1), ("B", 2), ("C", 3)))))
+    print()
+
+    # Joins
+    print("joins")
     run(Join(Lit(Tune((("A", 1),))), Lit(Tune((("B", 2),)))))
+    run(Join(Lit(Tune((("A", 1),))), Lit(Tune((("B", 2), ("C", 3))))))
+    print()
+
+    # Multiply (change duration)
+    print("multiply")
     run(Mul(Lit(Tune((("A", 5), ("B", 3),))), Lit(2)))
     run(Mul(Lit(Tune((("A", 5), ("B", 3),))), Lit(-2)))
+    print()
+
+    # Add (transpose pitch)
+    print("add")
     run(Add(Lit(Tune((("A", 5), ("B", 3),))), Lit(2)))
-    run(Add(Lit(Tune((("R", 5), ("D", 3),))), Lit(2)))
+    run(Add(Lit(Tune((("R", 5), ("D", 3),))), Lit(-2)))
+    print()
+
+    # Equality
+    assert(eval(Eq(Lit(Tune((("R", 5),))), Lit(Tune((("D", 3),))))) == False)
+    assert(eval(Eq(Lit(Tune((("R", 5), ("D", 3),))), Lit(2))) == False)
+    assert(eval(Eq(Lit(Tune((("D", 3),))), Lit(Tune((("D", 3),))))) == True)
+    assert(eval(Eq(Lit(Tune((("R", 5),))), Lit(Tune((("D", 3),("A", 4)))))) == False)
+    assert(eval(Neq(Lit(Tune((("R", 5),))), Lit(Tune((("D", 3),))))) == True)
+    assert(eval(Neq(Lit(Tune((("R", 5), ("D", 3),))), Lit(2))) == False)
+    assert(eval(Neq(Lit(Tune((("D", 3),))), Lit(Tune((("D", 3),))))) == False)
+    assert(eval(Neq(Lit(Tune((("R", 5),))), Lit(Tune((("D", 3),("A", 4)))))) == True)
 
     # Killer Queen (like the first two verses--I tried)
     run(Lit(Tune((
@@ -459,3 +512,5 @@ if __name__ == "__main__":
         ("C", 1), ("C", 1), ("C", 1), ("C", 1),
         ("C#", 2), ("C#", 1), ("A", 1), ("A", 1), ("G", 1),
     ))))
+
+    os.system('vlc tune.mid')
