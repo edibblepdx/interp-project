@@ -500,6 +500,12 @@ if __name__ == "__main__":
     assert(eval(Neq(Lit(Tune((("D", 3),))), Lit(Tune((("D", 3),))))) == False)
     assert(eval(Neq(Lit(Tune((("R", 5),))), Lit(Tune((("D", 3),("A", 4)))))) == True)
 
+    # Let
+    run(Let('x', Lit(Tune((("A", 1),))),
+                          Join(Name('x'), Lit(Tune((("B", 2),))))
+            ))
+    print()
+
     # Killer Queen (like the first two verses--I tried)
     run(Lit(Tune((
         ("A", 3), ("A", 3), ("D", 1), ("D", 2), ("C", 3), ("D", 1), ("A", 2),
@@ -514,3 +520,37 @@ if __name__ == "__main__":
     ))))
 
     os.system('vlc tune.mid')
+
+    """Description of Domain Specific Extension
+
+    A tune is an immutable tuple of notes: ((pitch: str, duration: int),).
+    Where pitch is a string representing a key on the chromatic scale and
+    duration is the length of the note. There is an additional pitch "R"
+    for rest.
+
+    Two tunes may be joined with '|' and ordered left to right.
+    A tune may be sped up by * {i in Z: i > 0} (integer)
+    A tune may be slowed down by * {i in Z: i < 0} (integer)
+    A tune may transpose it's tune along the scale with +/-
+    """
+
+    """How to use
+
+    A tune is a tuple so be careful AND it is a Literal 
+        => Lit(Tune(((pitch, duration),)))
+
+    Join(Lit(Tune((("A", 1),)), Lit(Tune((("B", 2),)))))
+        => Tune((("A", 1), ("B", 2),))
+
+    Mul(Lit(Tune((("A", 2),)), Lit(2))
+        => Tune((("A", 1),)) INVERSE ( duration * 1/2 )
+
+    Mul(Lit(Tune((("A", 2),)), Lit(-2))
+        => Tune((("A", 4),))
+
+    Add(Lit(Tune((("A", 2),)), Lit(2))
+        => Tune((("B", 2),))
+
+    Add(Lit(Tune((("A", 2),)), Lit(-2))
+        => Tune((("G", 2),))
+    """
