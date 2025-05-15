@@ -1,62 +1,88 @@
 #!/usr/bin/env python
 
 # NOTE: midiutil is included as suggested in the project information
-from midiutil import MIDIFile # version 1.2.1
+from midiutil import MIDIFile  # version 1.2.1
 
-import os # to play the midi
+import os  # to play the midi
 from dataclasses import dataclass
 from typing import Any
 
+# ==============================================================================
+# STANDARD TYPES
+# ==============================================================================
+
+type Literal = int | bool | Note
+type Expr = (
+    Lit | Add | Sub | Mul | Div | Neg | And | Or | Not | Eq
+    | Neq | Lt | Gt | Leq | Geq | If | Let | Name | Note | Join
+)
+
+type Binding[V] = tuple[str, V]  # this tuple type is always a pair
+type Env[V] = tuple[Binding[V], ...]  # this tuple type has arbitrary length
+emptyEnv: Env[Any] = ()  # the empty environment has no bindings
+
+# ==============================================================================
 # DOMAIN SPECIFIC TYPES
-# -----------------------------------------------
-type Pitch = str    # keys on the piano
-type Duration = int # in seconds
-type Note_t = tuple[Pitch, Duration]
-type Tune_t = tuple[Note_t, ...]
-emptyTune: Tune_t = ()
+# ==============================================================================
 
 # C-Major scale
 # https://computermusicresource.com/midikeys.html
 CHROMATIC = ("C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B")
 REST = "R"
 
-# this function is unused for now
-def extendTune(pitch: Pitch, duration: Duration, tune: Tune_t) -> Tune_t:
-    return tune + ((pitch, duration),)
 
-def transposePitch(pitch: Pitch, half_steps: int):
+def transposePitch(pitch: str, half_steps: int) -> str:
     try:
         index = CHROMATIC.index(pitch)
         new_index = (index + half_steps) % 12
         return CHROMATIC[new_index]
-    except:
+    except Exception:
         return REST
-# -----------------------------------------------
 
-type Literal = int | bool | Tune
-type Expr = Lit | Add | Sub | Mul | Div | Neg | And | Or | Not | Eq | Neq | \
-            Lt | Gt | Leq | Geq | If | Let | Name | Join
 
-type Binding[V] = tuple[str,V]  # this tuple type is always a pair
-type Env[V] = tuple[Binding[V], ...] # this tuple type has arbitrary length
-emptyEnv : Env[Any] = ()  # the empty environment has no bindings
+# DOMAIN SPECIFIC EXTENSION
+@dataclass
+class Note:
+    """{Str, Int} Note"""
+    pitch: str  # keys on the piano
+    duration: int  # in seconds
+    def __eq__(self, other) -> bool:
+        if isinstance(other, Note):
+            return self.pitch == other.pitch and self.duration == other.duration
+        return False
+    def __str__(self) -> str:
+        return f"({self.pitch}, {self.duration})"
+
 
 # DOMAIN SPECIFIC EXTENSION
 @dataclass
 class Tune:
-    """{Str, Int} Note"""
-    tune: Tune_t
+    """{ ((Note), ...) } Tune"""
+    notes: list[Note]
     def __str__(self) -> str:
-        return f"T'({",".join(f"({p}, {d})" for (p, d) in self.tune)},)"
+        return f"[{','.join(f'({note.pitch}, {note.duration})' for note in self.notes)}]"
+
 
 # DOMAIN SPECIFIC EXTENSION
 @dataclass
 class Join:
-    """{Str, Int} Note"""
+    """{Expr, Expr} Join"""
     left: Expr
     right: Expr
     def __str__(self) -> str:
         return f"({self.left} | {self.right})"
+
+
+# DOMAIN SPECIFIC EXTENSION
+@dataclass
+class Slice:
+    """{Tune, Int, Int} Slice"""
+    tune: Expr
+    start: Expr
+    end: Expr
+    def __str__(self) -> str:
+        return f"{self.tune}[{self.start}:{self.end}]"
+
 
 @dataclass
 class Lit:
@@ -64,6 +90,7 @@ class Lit:
     value: Literal
     def __str__(self) -> str:
         return f"{self.value}"
+
 
 @dataclass
 class Add:
@@ -73,6 +100,7 @@ class Add:
     def __str__(self) -> str:
         return f"({self.left} + {self.right})"
 
+
 @dataclass
 class Sub:
     """Subtraction"""
@@ -80,6 +108,7 @@ class Sub:
     right: Expr
     def __str__(self) -> str:
         return f"({self.left} - {self.right})"
+
 
 @dataclass
 class Mul:
@@ -89,6 +118,7 @@ class Mul:
     def __str__(self) -> str:
         return f"({self.left} * {self.right})"
 
+
 @dataclass
 class Div:
     """Integer Division"""
@@ -97,11 +127,14 @@ class Div:
     def __str__(self) -> str:
         return f"({self.left} // {self.right})"
 
+
 @dataclass
-class Neg():
+class Neg:
+    """Negation"""
     subexpr: Expr
     def __str__(self) -> str:
         return f"(- {self.subexpr})"
+
 
 @dataclass
 class And:
@@ -111,6 +144,7 @@ class And:
     def __str__(self) -> str:
         return f"({self.left} and {self.right})"
 
+
 @dataclass
 class Or:
     """Logical Or"""
@@ -119,12 +153,14 @@ class Or:
     def __str__(self) -> str:
         return f"({self.left} or {self.right})"
 
+
 @dataclass
 class Not:
     """Logical Not"""
     subexpr: Expr
     def __str__(self) -> str:
         return f"(not {self.subexpr})"
+
 
 @dataclass
 class Eq:
@@ -134,6 +170,7 @@ class Eq:
     def __str__(self) -> str:
         return f"({self.left} == {self.right})"
 
+
 @dataclass
 class Neq:
     """Equality"""
@@ -141,6 +178,7 @@ class Neq:
     right: Expr
     def __str__(self) -> str:
         return f"({self.left} != {self.right})"
+
 
 @dataclass
 class Lt:
@@ -150,6 +188,7 @@ class Lt:
     def __str__(self) -> str:
         return f"({self.left} < {self.right})"
 
+
 @dataclass
 class Gt:
     """Strictly greater than"""
@@ -157,6 +196,7 @@ class Gt:
     right: Expr
     def __str__(self) -> str:
         return f"({self.left} > {self.right})"
+
 
 @dataclass
 class Leq:
@@ -166,6 +206,7 @@ class Leq:
     def __str__(self) -> str:
         return f"({self.left} <= {self.right})"
 
+
 @dataclass
 class Geq:
     """Greater than or equal"""
@@ -173,6 +214,7 @@ class Geq:
     right: Expr
     def __str__(self) -> str:
         return f"({self.left} >= {self.right})"
+
 
 @dataclass
 class If:
@@ -183,6 +225,7 @@ class If:
     def __str__(self) -> str:
         return f"(if {self.cond} then {self.thenexpr} else {self.elseexpr})"
 
+
 @dataclass
 class Let:
     """Let {} = {} in {}"""
@@ -192,43 +235,59 @@ class Let:
     def __str__(self) -> str:
         return f"(let {self.name} = {self.defexpr} in {self.bodyexpr})"
 
+
 @dataclass
-class Name():
+class Name:
     """Name"""
-    name:str
+    name: str
     def __str__(self) -> str:
         return self.name
+
 
 def isInt(*args):
     return all(type(x) is int for x in args)
 
+
 def isBool(*args):
     return all(type(x) is bool for x in args)
 
-def lookupEnv[V](name: str, env: Env[V]) -> V :
-    '''Return the first value bound to name in the input environment env
-       (or raise an exception if there is no such binding)'''
-    try:
-        return next(v for (n,v) in env if n == name)
-    except StopIteration:
-        raise EnvError('name is not in environment: ' + name)
 
 class EvalError(Exception):
     """Invalid Expressions"""
     pass
 
-def extendEnv[V](name: str, value: V, env:Env[V]) -> Env[V]:
+class EnvError(Exception):
+    """Invalid Environment"""
+    pass
+
+
+def lookupEnv[V](name: str, env: Env[V]) -> V:
+    """Return the first value bound to name in the input environment env
+    (or raise an exception if there is no such binding)"""
+    try:
+        return next(v for (n, v) in env if n == name)
+    except StopIteration:
+        raise EnvError("name is not in environment: " + name)
+
+
+def extendEnv[V](name: str, value: V, env: Env[V]) -> Env[V]:
     """Return a new environment that extends the input environment
     env with a new binding from name to value"""
     return ((name, value),) + env
 
-def eval(e: Expr) -> Literal :
+
+def eval(e: Expr) -> Literal:
     return evalInEnv(emptyEnv, e)
 
-def evalInEnv(env: Env[Literal], e:Expr) -> bool:
+
+def evalInEnv(env: Env[Literal], e: Expr) -> Literal:
     match e:
         case Lit(lit):
             return lit
+
+        # DOMAIN SPECIFIC EXTENSION
+        case Note(pitch, duration):
+            return Tune([Note(pitch, duration)])
 
         # Arithmetic Operators
         # --------------------
@@ -239,33 +298,50 @@ def evalInEnv(env: Env[Literal], e:Expr) -> bool:
                     return l + r
                 # DOMAIN SPECIFIC EXTENSION
                 # shift each note by the specified number of half-steps
-                case(Tune(l), r) if isInt(r):
-                    new_notes = tuple((transposePitch(p, r), d) for (p, d) in l)
+                case (Tune(notes), shift) if isInt(shift):
+                    new_notes = [
+                        Note(transposePitch(note.pitch, shift), note.duration) 
+                        for note in notes
+                    ]
                     return Tune(new_notes)
                 case _:
-                    raise EvalError("addition of non-integers")
+                    raise EvalError("addition of non-integers or unsupported types")
 
         case Sub(l, r):
             match (evalInEnv(env, l), evalInEnv(env, r)):
                 case (l, r) if isInt(l, r):
                     return l - r
+                # DOMAIN SPECIFIC EXTENSION
+                # shift each note by the specified number of half-steps
+                case (Tune(notes), shift) if isInt(shift):
+                    new_notes = [
+                        Note(transposePitch(note.pitch, -shift), note.duration) 
+                        for note in notes
+                    ]
+                    return Tune(new_notes)
                 case _:
-                    raise EvalError("subtraction of non-integers")
+                    raise EvalError("subtraction of non-integers or unsupported types")
 
         case Mul(l, r):
             match (evalInEnv(env, l), evalInEnv(env, r)):
                 case (l, r) if isInt(l, r):
                     return l * r
                 # DOMAIN SPECIFIC EXTENSION
-                # change duration of each note by inverse of r if positive
-                # else if negative scale by abs(r)
-                case (Tune(l), r) if isInt(r):
+                # change duration of each note by inverse of val if positive
+                # else if negative scale by abs(val)
+                case (Tune(notes), val) if isInt(val):
                     if r == 0:
                         raise EvalError("divide by zero")
                     if r > 0:
-                        new_notes = tuple((p, d // r) for (p, d) in l)
+                        new_notes = [
+                            Note(note.pitch, note.duration // val)
+                            for note in notes
+                        ]
                     else:
-                        new_notes = tuple((p, d * abs(r)) for (p, d) in l)
+                        new_notes = [
+                            Note(note.pitch, note.duration * abs(val))
+                            for note in notes
+                        ]
                     return Tune(new_notes)
                 case _:
                     raise EvalError("multiplication of non-integers")
@@ -332,11 +408,11 @@ def evalInEnv(env: Env[Literal], e:Expr) -> bool:
             match (evalInEnv(env, l), evalInEnv(env, r)):
                 # DOMAIN SPECIFIC EXTENSION
                 # pure equality
-                case (Tune(l), Tune(r)):
-                    if len(l) != len(r):
+                case (Tune(n1), Tune(n2)):
+                    if len(n1) != len(n2):
                         return False
-                    for (l, r) in zip(l, r):
-                        if l != r:
+                    for n1, n2 in zip(n1, n2):
+                        if n1 != n2:
                             return False
                     return True
                 case (l, r):
@@ -348,11 +424,11 @@ def evalInEnv(env: Env[Literal], e:Expr) -> bool:
             match (evalInEnv(env, l), evalInEnv(env, r)):
                 # DOMAIN SPECIFIC EXTENSION
                 # pure equality
-                case (Tune(l), Tune(r)):
-                    if len(l) != len(r):
-                        return True
-                    for (l, r) in zip(l, r):
-                        if l != r:
+                case (Tune(n1), Tune(n2)):
+                    if len(n1) != len(n2):
+                        return False
+                    for n1, n2 in zip(n1, n2):
+                        if n1 != n2:
                             return True
                     return False
                 case (l, r):
@@ -408,9 +484,9 @@ def evalInEnv(env: Env[Literal], e:Expr) -> bool:
         # ------------
 
         case Name(n):
-             return lookupEnv(n,env)
+            return lookupEnv(n, env)
 
-        case Let(n,d,b):
+        case Let(n, d, b):
             v = evalInEnv(env, d)
             newEnv = extendEnv(n, v, env)
             return evalInEnv(newEnv, b)
@@ -422,174 +498,92 @@ def evalInEnv(env: Env[Literal], e:Expr) -> bool:
             # DOMAIN SPECIFIC EXTENSION
             # join two tunes
             match (evalInEnv(env, l), evalInEnv(env, r)):
-                case (Tune(l), Tune(r)):
-                    return Tune(l + r)
+                case (Tune(n1), Tune(n2)):
+                    return Tune(n1 + n2)
                 case _:
                     raise EvalError("non-joinable type")
+
+        # Slice (represented by [:])
+        # -------------------------
+
+        case Slice(tune, start, end):
+            # DOMAIN SPECIFIC EXTENSION
+            # get a tune slice
+            match (evalInEnv(env, tune), evalInEnv(env, start), evalInEnv(env, end)):
+                case (Tune(notes), start, end) if isInt(start, end):
+                    return Tune(notes[start:end])
+                case (a, b, c):
+                    raise EvalError("non-sliceable type")
+
 
 def run(e: Expr):
     print(f"running {e}")
     try:
         match eval(e):
-            case Tune(t):
-
-                track    = 0
-                channel  = 0
-                time     = 0   # In beats
-                tempo    = 250 # In BPM
-                volume   = 100 # 0-127, as per the MIDI standard
+            case Tune(notes):
+                track = 0
+                channel = 0
+                time = 0  # In beats
+                tempo = 250  # In BPM
+                volume = 100  # 0-127, as per the MIDI standard
 
                 MyMIDI = MIDIFile(1)
                 MyMIDI.addTempo(track, time, tempo)
 
-                for (p, d) in t:
+                for note in notes:
                     try:
-                        pitch = CHROMATIC.index(p) + 60
-                        MyMIDI.addNote(track, channel, pitch, time, d, volume)
+                        pitch = CHROMATIC.index(note.pitch) + 60
+                        duration = note.duration
+                        MyMIDI.addNote(track, channel, pitch, time, duration, volume)
                     except:
                         pass
 
-                    time = time + d
+                    time = time + note.duration
 
                 with open("tune.mid", "wb") as output_file:
                     MyMIDI.writeFile(output_file)
 
-                print(f"result: {t}")
+                print(f"result: {Tune(notes)}")
             case o:
                 print(f"result: {o}")
     except EvalError as err:
         print(err)
 
+
 if __name__ == "__main__":
-    # Tune((("A", 1),)) has a lot of parens so be careful
+    run(Note("A", 1))
+    run(
+        Join(Note("A", 1), Note("B", 2))
+    )
+    run(
+        Join(Note("A", 1), Join(Note("B", 2), Note("C", 3)))
+    )
+    run(
+        Let(
+            'x',
+            Join(Note("A", 1), Note("B", 2)),
+            Slice(Name('x'), Lit(1), Lit(2))
+        )
+    )
+    run(
+        Add(Join(Note("A", 1), Note("B", 2)), Lit(2))
+    )
+    run(
+        Sub(Join(Note("A", 1), Note("B", 2)), Lit(2))
+    )
+    run(
+        Mul(Join(Note("A", 10), Note("B", 10)), Lit(2))
+    )
+    run(
+        Eq(
+            Join(Note("A", 1), Join(Note("B", 2), Note("C", 3))),
+            Join(Note("A", 1), Join(Note("B", 2), Note("C", 3)))
+        )
+    )
+    run(
+        Neq(
+            Join(Note("A", 1), Join(Note("B", 2), Note("C", 3))),
+            Join(Note("A", 1), Join(Note("B", 2), Note("C", 3)))
+        )
+    )
 
-    # Tests
-    # -----
-
-    # Lit
-    print("lit")
-    run(Lit(Tune((("A", 1),))))
-    run(Lit(Tune((("A", 1), ("B", 2), ("C", 3)))))
-    print()
-
-    # Joins
-    print("joins")
-    run(Join(Lit(Tune((("A", 1),))), Lit(Tune((("B", 2),)))))
-    run(Join(Lit(Tune((("A", 1),))), Lit(Tune((("B", 2), ("C", 3))))))
-    try:
-        eval(Join(Lit(2), Lit(4)))
-    except:
-        print("Join exception expected (good)")
-    print()
-
-    # Multiply (change duration)
-    print("multiply")
-    run(Mul(Lit(Tune((("A", 5), ("B", 3),))), Lit(2)))
-    run(Mul(Lit(Tune((("A", 5), ("B", 3),))), Lit(-2)))
-    try:
-        eval(Mul(Lit(Tune((("A", 1),))), Lit(Tune((("A", 1),)))))
-    except:
-        print("Mul exception expected (good)")
-    print()
-
-    # Add (transpose pitch)
-    print("add")
-    run(Add(Lit(Tune((("A", 5), ("B", 3),))), Lit(2)))
-    run(Add(Lit(Tune((("R", 5), ("D", 3),))), Lit(-2)))
-    try:
-        eval(Add(Lit(Tune((("A", 1),))), Lit(Tune((("A", 1),)))))
-    except:
-        print("Add exception expected (good)")
-    print()
-
-    # Equality
-    assert(eval(Eq(Lit(Tune((("R", 5),))), Lit(Tune((("D", 3),))))) == False)
-    assert(eval(Eq(Lit(Tune((("R", 5), ("D", 3),))), Lit(2))) == False)
-    assert(eval(Eq(Lit(Tune((("D", 3),))), Lit(Tune((("D", 3),))))) == True)
-    assert(eval(Eq(Lit(Tune((("R", 5),))), Lit(Tune((("D", 3),("A", 4)))))) == False)
-    assert(eval(Neq(Lit(Tune((("R", 5),))), Lit(Tune((("D", 3),))))) == True)
-    assert(eval(Neq(Lit(Tune((("R", 5), ("D", 3),))), Lit(2))) == False)
-    assert(eval(Neq(Lit(Tune((("D", 3),))), Lit(Tune((("D", 3),))))) == False)
-    assert(eval(Neq(Lit(Tune((("R", 5),))), Lit(Tune((("D", 3),("A", 4)))))) == True)
-
-    # Let
-    run(Let('x', Lit(Tune((("A", 1),))),
-                          Join(Name('x'), Lit(Tune((("B", 2),))))
-            ))
-    print()
-
-    # Killer Queen (like the first two verses--I tried)
-    run(Lit(Tune((
-        ("A", 3), ("A", 3), ("D", 1), ("D", 2), ("C", 3), ("D", 1), ("A", 2),
-        ("E", 2), ("D", 2), ("E", 1), ("F", 2), ("E", 1), ("D", 1), ("D", 2),
-        ("D", 3), ("D", 3), ("C", 3), ("D", 2), ("A", 2), ("A", 2),
-        ("E", 2), ("E", 2), ("E", 1), ("E", 3), ("F", 1), ("G", 1), ("A", 2),
-        ("C", 2), ("A", 1), ("A", 2), ("G", 1), ("F", 1), ("G", 2),
-        ("E", 3), ("F", 1), ("F", 3), ("F", 2), ("E", 1), ("D", 2), ("E", 1),
-        ("D", 1), ("C#", 1), ("D", 1), ("C#", 2), ("C#", 2), 
-        ("C", 1), ("C", 1), ("C", 1), ("C", 1),
-        ("C#", 2), ("C#", 1), ("A", 1), ("A", 1), ("G", 1),
-    ))))
-
-    """Description of Domain Specific Extension
-
-    A tune is an immutable tuple of notes: ((pitch: str, duration: int),).
-    Where pitch is a string representing a key on the chromatic scale and
-    duration is the length of the note. There is an additional pitch "R"
-    for rest.
-
-    Two tunes may be joined with '|' and ordered left to right.
-    A tune may be sped up by * {i in Z: i > 0} (integer)
-    A tune may be slowed down by * {i in Z: i < 0} (integer)
-    A tune may transpose it's tune along the scale with +/-
-    """
-
-    """How to use
-
-    A tune is a tuple so be careful AND it is a Literal 
-        => Lit(Tune(((pitch, duration),)))
-
-    Join(Lit(Tune((("A", 1),)), Lit(Tune((("B", 2),)))))
-        => Tune((("A", 1), ("B", 2),))
-
-    Mul(Lit(Tune((("A", 2),)), Lit(2))
-        => Tune((("A", 1),)) INVERSE ( duration * 1/2 )
-
-    Mul(Lit(Tune((("A", 2),)), Lit(-2))
-        => Tune((("A", 4),))
-
-    Add(Lit(Tune((("A", 2),)), Lit(2))
-        => Tune((("B", 2),))
-
-    Add(Lit(Tune((("A", 2),)), Lit(-2))
-        => Tune((("G", 2),))
-    """
-
-    # test Gt, Leq, Geq
-    # -----------------
-    print()
-    assert(eval(Gt(Lit(5), Lit(4))) == True)
-    assert(eval(Gt(Lit(4), Lit(5))) == False)
-    try:
-        eval(Gt(Lit(True), Lit(False)))
-    except:
-        print("Gt exception expected (good)")
-
-    assert(eval(Leq(Lit(5), Lit(4))) == False)
-    assert(eval(Leq(Lit(4), Lit(5))) == True)
-    assert(eval(Leq(Lit(4), Lit(4))) == True)
-    try:
-        eval(Leq(Lit(True), Lit(False)))
-    except:
-        print("Leq exception expected (good)")
-
-    assert(eval(Geq(Lit(5), Lit(4))) == True)
-    assert(eval(Geq(Lit(4), Lit(5))) == False)
-    assert(eval(Geq(Lit(4), Lit(4))) == True)
-    try:
-        eval(Geq(Lit(True), Lit(False)))
-    except:
-        print("Geq exception expected (good)")
-
-    # Play MIDI demo
-    os.system('vlc tune.mid')
