@@ -15,6 +15,7 @@ type Literal = int | bool | Note
 type Expr = (
     Lit | Add | Sub | Mul | Div | Neg | And | Or | Not | Eq
     | Neq | Lt | Gt | Leq | Geq | If | Let | Name | Note | Join
+    | Slice | Letfun | App
 )
 
 type Binding[V] = tuple[str, V]  # this tuple type is always a pair
@@ -244,12 +245,33 @@ class Name:
         return self.name
 
 
-def isInt(*args):
-    return all(type(x) is int for x in args)
+@dataclass
+class Letfun():
+    """Function Definition"""
+    name: str
+    param: str
+    bodyexpr: Expr
+    inexpr: Expr
+    def __str__(self) -> str:
+        return f"letfun {self.name} ({self.param}) = {self.bodyexpr} in {self.inexpr} end"
 
 
-def isBool(*args):
-    return all(type(x) is bool for x in args)
+@dataclass
+class App():
+    """Function Application"""
+    fun: Expr
+    arg: Expr
+    def __str__(self) -> str:
+        return f"({self.fun} ({self.arg}))"
+
+
+type Value = Literal | Closure
+@dataclass
+class Closure:
+    """Closure"""
+    param: str
+    body: Expr
+    env: Env[Value]
 
 
 class EvalError(Exception):
@@ -281,6 +303,12 @@ def eval(e: Expr) -> Literal:
 
 
 def evalInEnv(env: Env[Literal], e: Expr) -> Literal:
+    def isInt(*args) -> bool:
+        return all(type(x) is int for x in args)
+
+    def isBool(*args) -> bool:
+        return all(type(x) is bool for x in args)
+
     match e:
         case Lit(lit):
             return lit
@@ -376,9 +404,9 @@ def evalInEnv(env: Env[Literal], e: Expr) -> Literal:
                         case r if isBool(r):
                             return r
                         case _:
-                            raise EvalError("R logical operation on non-boolean")
+                            raise EvalError("Right logical operation on non-boolean")
                 case _:
-                    raise EvalError("L logical operation on non-boolean")
+                    raise EvalError("Left logical operation on non-boolean")
 
         case Or(l, r):
             match evalInEnv(env, l):
@@ -389,9 +417,9 @@ def evalInEnv(env: Env[Literal], e: Expr) -> Literal:
                         case r if isBool(r):
                             return r
                         case _:
-                            raise EvalError("R logical operation on non-boolean")
+                            raise EvalError("Right logical operation on non-boolean")
                 case _:
-                    raise EvalError("L logical operation on non-boolean")
+                    raise EvalError("Left logical operation on non-boolean")
 
         case Not(subexpr):
             match evalInEnv(env, subexpr):
@@ -514,6 +542,25 @@ def evalInEnv(env: Env[Literal], e: Expr) -> Literal:
                     return Tune(notes[start:end])
                 case (a, b, c):
                     raise EvalError("non-sliceable type")
+
+        # Functions
+        # ---------
+
+        case Letfun(n, p, b, i):
+            c = Closure(p, b, env)
+            newEnv = extendEnv(n, c, env)
+            c.env = newEnv
+            return evalInEnv(newEnv, i)
+
+        case App(f, a):
+            fun = evalInEnv(env, f)
+            arg = evalInEnv(env, a)
+            match fun:
+                case Closure(p, b, cenv):
+                    newEnv = extendEnv(p, arg, cenv) 
+                    return evalInEnv(newEnv, b)
+                case _:
+                    raise EvalError("application of non-function")
 
 
 def run(e: Expr):

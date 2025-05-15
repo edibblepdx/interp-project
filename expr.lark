@@ -1,0 +1,59 @@
+%import common.INT -> INT
+%import common.CNAME -> NAME
+%import common.WS
+
+%ignore WS
+
+//    Lit | Add | Sub | Mul | Div | Neg | And | Or | Not | Eq
+//    | Neq | Lt | Gt | Leq | Geq | If | Let | Name | Note | Join
+//    | Slice | Letfun | App
+
+start: exp
+
+?exp: if_exp
+
+?if_exp: "if" exp "then" exp "else" exp -> if
+       | or_exp
+
+?or_exp: exp "||" and_exp -> or
+       | and_exp
+
+?and_exp: exp "&&" not_exp -> and
+        | not_exp
+
+?not_exp: "!" exp -> not
+
+?comp_exp: exp "==" join_exp -> eq
+         | exp "!=" join_exp -> neq
+         | exp "<" join_exp -> lt
+         | exp ">" join_exp -> gt
+         | exp "<=" join_exp -> leq
+         | exp ">=" join_exp -> geq
+         | join_exp
+
+?join_exp: exp "|" arith_exp1 -> join  //= DOMAIN =//
+         | arith_exp1
+
+?arith_exp1: exp "+" arith_exp2 -> add
+           | exp "-" arith_exp2 -> sub
+           | arith_exp2
+
+?arith_exp2: exp "*" neg_exp -> mul
+           | exp "/" neg_exp -> div
+           | neg_exp
+
+?neg_exp: "-" neg_exp -> neg
+        | slice_exp
+
+?slice_exp: slice_exp "[" exp ":" exp "]" -> slice  //= DOMAIN =//
+          | atom
+
+?atom: "true" -> true
+     | "false" -> false
+     | INT -> int
+     | NAME -> name
+     | "(" NAME "," INT ")"-> note  //= DOMAIN =//
+     | "(" exp ")"
+     | "let" ID "=" exp "in" exp "end" -> let
+     | "letfun" ID "(" ID ")" "=" exp "in" exp "end" -> letfun
+     | atom "(" exp ")" -> app
