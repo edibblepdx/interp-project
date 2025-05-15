@@ -8,7 +8,7 @@
 //    | Neq | Lt | Gt | Leq | Geq | If | Let | Name | Note | Join
 //    | Slice | Letfun | App
 
-start: exp
+?start: exp
 
 ?exp: if_exp
 
