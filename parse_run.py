@@ -8,7 +8,8 @@ from interp import (
     Literal, Note, Expr,
     Lit, Add, Sub, Mul, Div, Neg, And, Or, Not, Eq,
     Neq, Lt, Gt, Leq, Geq, If, Let, Name, Note, Join, 
-    Slice, Letfun, App
+    Slice, Letfun, App,
+    run
 )
 
 parser = Lark(Path('expr.lark').read_text(), ambiguity='explicit')
@@ -21,63 +22,63 @@ class ParseError(Exception):
 class AmbiguousParse(Exception):
     pass
 
-class ToProgram(Transformer[Token,Program]):
+class ToExpr(Transformer[Token, Expr]):
     """Defines a transformation from a parse tree into an AST"""
-    def if(self, args: tuple[Expr, Expr, Expr]):
-        pass
-    def or(self, args: tuple[Expr, Expr]):
-        pass
-    def and(self, args: tuple[Expr, Expr]):
-        pass
-    def not(self, args: tuple[Expr]):
-        pass
-    def eq(self, args: tuple[Expr, Expr]):
-        pass
-    def neq(self, args: tuple[Expr, Expr]):
-        pass
-    def lt(self, args: tuple[Expr, Expr]):
-        pass
-    def gt(self, args: tuple[Expr, Expr]):
-        pass
-    def leq(self, args: tuple[Expr, Expr]):
-        pass
-    def geq(self, args: tuple[Expr, Expr]):
-        pass
+    def if_(self, args: tuple[Expr, Expr, Expr]) -> Expr:
+        return If(*args)
+    def or_(self, args: tuple[Expr, Expr]) -> Expr:
+        return Or(*args)
+    def and_(self, args: tuple[Expr, Expr]) -> Expr:
+        return And(*args)
+    def not_(self, args: tuple[Expr]) -> Expr:
+        return Not(*args)
+    def eq(self, args: tuple[Expr, Expr]) -> Expr:
+        return Eq(*args)
+    def neq(self, args: tuple[Expr, Expr]) -> Expr:
+        return Neq(*args)
+    def lt(self, args: tuple[Expr, Expr]) -> Expr:
+        return Lt(*args)
+    def gt(self, args: tuple[Expr, Expr]) -> Expr:
+        return Gt(*args)
+    def leq(self, args: tuple[Expr, Expr]) -> Expr:
+        return Leq(*args)
+    def geq(self, args: tuple[Expr, Expr]) -> Expr:
+        return Geq(*args)
     # DOMAIN SPECIFIC EXTENSION
-    def join(self, args: tuple[Expr, Expr]):
-        pass
-    def add(self, args: tuple[Expr, Expr]):
-        pass
-    def sub(self, args: tuple[Expr, Expr]):
-        pass
-    def mul(self, args: tuple[Expr, Expr]):
-        pass
-    def div(self, args: tuple[Expr, Expr]):
-        pass
-    def neg(self, args: tuple[Expr]):
-        pass
+    def join(self, args: tuple[Expr, Expr]) -> Expr:
+        return Join(*args)
+    def add(self, args: tuple[Expr, Expr]) -> Expr:
+        return Add(*args)
+    def sub(self, args: tuple[Expr, Expr]) -> Expr:
+        return Sub(*args)
+    def mul(self, args: tuple[Expr, Expr]) -> Expr:
+        return Mul(*args)
+    def div(self, args: tuple[Expr, Expr]) -> Expr:
+        return Div(*args)
+    def neg(self, args: tuple[Expr]) -> Expr:
+        return Neq(*args)
     # DOMAIN SPECIFIC EXTENSION
-    def slice(self, args: tuple[Expr, Expr, Expr]):
-        pass
-    def true(self):
-        pass
-    def false(self):
-        pass
-    def int(self, args: tuple[Token]):
-        pass
-    def name(self, args: tuple[Token]):
-        pass
+    def slice(self, args: tuple[Expr, Expr, Expr]) -> Expr:
+        return Slice(*args)
+    def true(self) -> Expr:
+        return Lit(True)
+    def false(self) -> Expr:
+        return Lit(False)
+    def int(self, args: tuple[Token]) -> Expr:
+        return Lit(*args)
+    def name(self, args: tuple[Token]) -> Expr:
+        return Name(*args)
     # DOMAIN SPECIFIC EXTENSION
-    def note(self, args: tuple[Token, Token]):
-        pass
-    def let(self, args: tuple[Token, Expr, Expr]):
-        pass
-    def letfun(self, args: tuple[Token, Token, Expr, Expr]):
-        pass
-    def app(self, args: tuple[Expr, Expr]):
-        pass
+    def note(self, args: tuple[Token, Token]) -> Expr:
+        return Note(*args)
+    def let(self, args: tuple[Token, Expr, Expr]) -> Expr:
+        return Let(*args)
+    def letfun(self, args: tuple[Token, Token, Expr, Expr]) -> Expr:
+        return Letfun(*args)
+    def app(self, args: tuple[Expr, Expr]) -> Expr:
+        return App(*args)
     # ambiguity marker
-    def _ambig(self,_) -> Expr:
+    def _ambig(self, _) -> Expr:
         raise AmbiguousParse()
 
 def parse(s:str) -> ParseTree:
@@ -86,10 +87,10 @@ def parse(s:str) -> ParseTree:
     except Exception as e:
         raise ParseError(e)
 
-def genAST(t:ParseTree) -> Program:
+def genAST(t:ParseTree) -> Expr:
     """Applies the transformer to convert a parse tree into an AST"""
     try:
-        return ToProgram().transform(t)
+        return ToExpr().transform(t)
     except VisitError as e:
         if isinstance(e.orig_exc, AmbiguousParse):
             raise AmbiguousParse()
@@ -98,8 +99,18 @@ def genAST(t:ParseTree) -> Program:
 
 def parse_and_run(s: str):
     try:
-        run(genAST(parse(s)))
+        t = parse(s)
+        print(t.pretty())
+
+        ast = genAST(t)
+        run(ast); print()
+
     except AmbiguousParse:
         print("ambiguous parse")
+
     except ParseError as e:
         print(f"parse error: {e}")
+
+if __name__ == "__main__":
+    parse_and_run("30 + 12")
+    parse_and_run("(A, 1) | (B, 2)")

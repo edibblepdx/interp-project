@@ -12,16 +12,17 @@ start: exp
 
 ?exp: if_exp
 
-?if_exp: "if" exp "then" exp "else" exp -> if
+?if_exp: "if" exp "then" exp "else" exp -> if_
        | or_exp
 
-?or_exp: exp "||" and_exp -> or
+?or_exp: exp "||" and_exp -> or_
        | and_exp
 
-?and_exp: exp "&&" not_exp -> and
+?and_exp: exp "&&" not_exp -> and_
         | not_exp
 
-?not_exp: "!" exp -> not
+?not_exp: "!" not_exp -> not_
+        | comp_exp
 
 ?comp_exp: exp "==" join_exp -> eq
          | exp "!=" join_exp -> neq
@@ -54,6 +55,6 @@ start: exp
      | NAME -> name
      | "(" NAME "," INT ")"-> note  //= DOMAIN =//
      | "(" exp ")"
-     | "let" ID "=" exp "in" exp "end" -> let
-     | "letfun" ID "(" ID ")" "=" exp "in" exp "end" -> letfun
+     | "let" NAME "=" exp "in" exp "end" -> let
+     | "letfun" NAME "(" NAME ")" "=" exp "in" exp "end" -> letfun
      | atom "(" exp ")" -> app
