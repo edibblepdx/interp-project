@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+import test_domain
+import unittest
+
 from lark import Lark, Token, ParseTree, Transformer
 from lark.exceptions import VisitError
 from pathlib import Path
@@ -182,3 +185,8 @@ if __name__ == "__main__":
     parse_and_run("30 / 10")
     parse_and_run("true")
     parse_and_run("((A, 5) | (B, 2))[1:2]")
+
+    loader = unittest.TestLoader()
+    suite = loader.loadTestsFromTestCase(testCaseClass=test_domain.TestParseDomain)
+    runner = unittest.TextTestRunner()
+    runner.run(suite)

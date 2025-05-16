@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+import test_domain
+import unittest
+
 # NOTE: midiutil is included as suggested in the project information
 from midiutil import MIDIFile  # version 1.2.1
 
@@ -643,4 +646,9 @@ if __name__ == "__main__":
         Join(Note("A", 1), Join(Note("B", 2), Join(Note("C", 3), Note("D", 4)))),
         writeMidi=True
     )
+
+    loader = unittest.TestLoader()
+    suite = loader.loadTestsFromTestCase(testCaseClass=test_domain.TestEvalDomain)
+    runner = unittest.TextTestRunner()
+    runner.run(suite)
 
