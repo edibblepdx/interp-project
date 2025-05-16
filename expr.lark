@@ -12,46 +12,44 @@
 
 ?exp: if_exp
 
-?if_exp: "if" exp "then" exp "else" exp -> if_
+?if_exp: "if" if_exp "then" if_exp "else" if_exp -> if_
        | or_exp
 
-?or_exp: exp "||" and_exp -> or_
+?or_exp: or_exp "||" and_exp -> or_
        | and_exp
 
-?and_exp: exp "&&" not_exp -> and_
+?and_exp: and_exp "&&" not_exp -> and_
         | not_exp
 
 ?not_exp: "!" not_exp -> not_
         | comp_exp
 
-?comp_exp: exp "==" join_exp -> eq
-         | exp "!=" join_exp -> neq
-         | exp "<" join_exp -> lt
-         | exp ">" join_exp -> gt
-         | exp "<=" join_exp -> leq
-         | exp ">=" join_exp -> geq
+?comp_exp: join_exp "==" join_exp -> eq
+         | join_exp "!=" join_exp -> neq
+         | join_exp "<" join_exp -> lt
+         | join_exp ">" join_exp -> gt
+         | join_exp "<=" join_exp -> leq
+         | join_exp ">=" join_exp -> geq
          | join_exp
 
-?join_exp: exp "|" arith_exp1 -> join  //= DOMAIN =//
+?join_exp: join_exp "|" arith_exp1 -> join  //= DOMAIN =//
          | arith_exp1
 
-?arith_exp1: exp "+" arith_exp2 -> add
-           | exp "-" arith_exp2 -> sub
+?arith_exp1: arith_exp1 "+" arith_exp2 -> add
+           | arith_exp1 "-" arith_exp2 -> sub
            | arith_exp2
 
-?arith_exp2: exp "*" neg_exp -> mul
-           | exp "/" neg_exp -> div
+?arith_exp2: arith_exp2 "*" neg_exp -> mul
+           | arith_exp2 "/" neg_exp -> div
            | neg_exp
 
 ?neg_exp: "-" neg_exp -> neg
         | slice_exp
 
-?slice_exp: slice_exp "[" exp ":" exp "]" -> slice  //= DOMAIN =//
+?slice_exp: slice_exp "[" atom ":" atom "]" -> slice  //= DOMAIN =//
           | atom
 
-?atom: "true" -> true
-     | "false" -> false
-     | INT -> int
+?atom: INT -> int
      | NAME -> name
      | "(" NAME "," INT ")"-> note  //= DOMAIN =//
      | "(" exp ")"

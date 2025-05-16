@@ -13,9 +13,9 @@ from interp import (
 )
 
 
-parser = Lark(Path('expr.lark').read_text(), ambiguity='explicit')
+parser = Lark(Path('expr.lark').read_text(), parser='earley', ambiguity='explicit')
 #for checking against ambiguity:
-#parser = Lark(Path('imp.lark').read_text(), parser='lalr', strict='True')
+#parser = Lark(Path('expr.lark').read_text(), parser='lalr', strict='True')
 
 
 class ParseError(Exception):
@@ -76,33 +76,41 @@ class ToExpr(Transformer[Token, Expr]):
         return Div(*args)
 
     def neg(self, args: tuple[Expr]) -> Expr:
-        return Neq(*args)
+        return Neg(*args)
 
     # DOMAIN SPECIFIC EXTENSION
     def slice(self, args: tuple[Expr, Expr, Expr]) -> Expr:
         return Slice(*args)
 
-    def true(self) -> Expr:
+    def true(self, _) -> Expr:
+        # unused
         return Lit(True)
 
-    def false(self) -> Expr:
+    def false(self, _) -> Expr:
+        # unused
         return Lit(False)
 
     def int(self, args: tuple[Token]) -> Expr:
-        return Lit(int(*args))
+        return Lit(int(args[0].value))
 
     def name(self, args: tuple[Token]) -> Expr:
-        return Name(*args)
+        value = args[0].value
+        if value == "true":
+            return Lit(True)
+        elif value == "false":
+            return Lit(False)
+        else:
+            return Name(value)
 
     # DOMAIN SPECIFIC EXTENSION
     def note(self, args: tuple[Token, Token]) -> Expr:
-        return Note(args[0], int(args[1]))
+        return Note(args[0].value, int(args[1].value))
 
     def let(self, args: tuple[Token, Expr, Expr]) -> Expr:
-        return Let(*args)
+        return Let(args[0].value, args[1], args[2])
 
     def letfun(self, args: tuple[Token, Token, Expr, Expr]) -> Expr:
-        return Letfun(*args)
+        return Letfun(args[0].value, args[1].value, args[2], args[3])
 
     def app(self, args: tuple[Expr, Expr]) -> Expr:
         return App(*args)
@@ -169,3 +177,6 @@ def just_parse(s: str) -> (Expr|None):
 if __name__ == "__main__":
     parse_and_run("30 + 12")
     parse_and_run("(A, 1) | (B, 2)")
+    parse_and_run("30 / 10")
+    parse_and_run("true")
+    parse_and_run("((A, 5) | (B, 2))[1:2]")

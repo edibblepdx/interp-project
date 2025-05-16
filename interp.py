@@ -568,6 +568,7 @@ def run(e: Expr):
     try:
         match eval(e):
             case Tune(notes):
+                """
                 track = 0
                 channel = 0
                 time = 0  # In beats
@@ -589,6 +590,7 @@ def run(e: Expr):
 
                 with open("tune.mid", "wb") as output_file:
                     MyMIDI.writeFile(output_file)
+                """
 
                 print(f"result: {Tune(notes)}")
             case o:
