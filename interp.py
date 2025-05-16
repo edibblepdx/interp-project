@@ -563,36 +563,35 @@ def evalInEnv(env: Env[Literal], e: Expr) -> Literal:
                     raise EvalError("application of non-function")
 
 
-def run(e: Expr):
+def run(e: Expr, writeMidi: bool = False):
     print(f"running {e}")
     try:
         match eval(e):
             case Tune(notes):
-                """
-                track = 0
-                channel = 0
-                time = 0  # In beats
-                tempo = 250  # In BPM
-                volume = 100  # 0-127, as per the MIDI standard
-
-                MyMIDI = MIDIFile(1)
-                MyMIDI.addTempo(track, time, tempo)
-
-                for note in notes:
-                    try:
-                        pitch = CHROMATIC.index(note.pitch) + 60
-                        duration = note.duration
-                        MyMIDI.addNote(track, channel, pitch, time, duration, volume)
-                    except:
-                        pass
-
-                    time = time + note.duration
-
-                with open("tune.mid", "wb") as output_file:
-                    MyMIDI.writeFile(output_file)
-                """
-
                 print(f"result: {Tune(notes)}")
+
+                if writeMidi:
+                    track = 0
+                    channel = 0
+                    time = 0  # In beats
+                    tempo = 250  # In BPM
+                    volume = 100  # 0-127, as per the MIDI standard
+
+                    MyMIDI = MIDIFile(1)
+                    MyMIDI.addTempo(track, time, tempo)
+
+                    for note in notes:
+                        try:
+                            pitch = CHROMATIC.index(note.pitch) + 60
+                            duration = note.duration
+                            MyMIDI.addNote(track, channel, pitch, time, duration, volume)
+                        except:
+                            pass
+
+                        time = time + note.duration
+
+                    with open("tune.mid", "wb") as output_file:
+                        MyMIDI.writeFile(output_file)
             case o:
                 print(f"result: {o}")
     except EvalError as err:
@@ -634,5 +633,9 @@ if __name__ == "__main__":
             Join(Note("A", 1), Join(Note("B", 2), Note("C", 3))),
             Join(Note("A", 1), Join(Note("B", 2), Note("C", 3)))
         )
+    )
+    run(
+        Join(Note("A", 1), Join(Note("B", 2), Join(Note("C", 3), Note("D", 4)))),
+        writeMidi=True
     )
 
