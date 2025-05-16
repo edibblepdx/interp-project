@@ -169,9 +169,11 @@ def just_parse(s: str) -> (Expr|None):
 
     except AmbiguousParse:
         print("ambiguous parse")
+        return None
 
     except ParseError as e:
         print(f"parse error: {e}")
+        return None
 
 
 if __name__ == "__main__":

@@ -5,7 +5,7 @@ from midiutil import MIDIFile  # version 1.2.1
 
 import os  # to play the midi
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, TypeGuard
 
 # ==============================================================================
 # STANDARD TYPES
@@ -265,7 +265,7 @@ class App():
         return f"({self.fun} ({self.arg}))"
 
 
-type Value = Literal | Closure
+type Value = Literal | Closure | Tune
 @dataclass
 class Closure:
     """Closure"""
@@ -298,11 +298,11 @@ def extendEnv[V](name: str, value: V, env: Env[V]) -> Env[V]:
     return ((name, value),) + env
 
 
-def eval(e: Expr) -> Literal:
+def eval(e: Expr) -> (Literal|Tune):
     return evalInEnv(emptyEnv, e)
 
 
-def evalInEnv(env: Env[Literal], e: Expr) -> Literal:
+def evalInEnv(env: Env[Literal], e: Expr) -> (Literal|Tune):
     def isInt(*args) -> bool:
         return all(type(x) is int for x in args)
 
@@ -328,7 +328,7 @@ def evalInEnv(env: Env[Literal], e: Expr) -> Literal:
                 # shift each note by the specified number of half-steps
                 case (Tune(notes), shift) if isInt(shift):
                     new_notes = [
-                        Note(transposePitch(note.pitch, shift), note.duration) 
+                        Note(transposePitch(note.pitch, shift), note.duration)
                         for note in notes
                     ]
                     return Tune(new_notes)
@@ -444,7 +444,7 @@ def evalInEnv(env: Env[Literal], e: Expr) -> Literal:
                             return False
                     return True
                 case (l, r):
-                    if type(l) != type(r):
+                    if type(l) is not type(r):
                         return False
                     return l == r
 
@@ -460,7 +460,7 @@ def evalInEnv(env: Env[Literal], e: Expr) -> Literal:
                             return True
                     return False
                 case (l, r):
-                    if type(l) != type(r):
+                    if type(l) is not type(r):
                         return False
                     return l != r
 
@@ -540,7 +540,7 @@ def evalInEnv(env: Env[Literal], e: Expr) -> Literal:
             match (evalInEnv(env, tune), evalInEnv(env, start), evalInEnv(env, end)):
                 case (Tune(notes), start, end) if isInt(start, end):
                     return Tune(notes[start:end])
-                case (a, b, c):
+                case _:
                     raise EvalError("non-sliceable type")
 
         # Functions
@@ -561,6 +561,11 @@ def evalInEnv(env: Env[Literal], e: Expr) -> Literal:
                     return evalInEnv(newEnv, b)
                 case _:
                     raise EvalError("application of non-function")
+
+        case _:
+            raise EvalError(f"unknown expression type: {e}")
+
+    return # type: ignore
 
 
 def run(e: Expr, writeMidi: bool = False):
@@ -585,7 +590,7 @@ def run(e: Expr, writeMidi: bool = False):
                             pitch = CHROMATIC.index(note.pitch) + 60
                             duration = note.duration
                             MyMIDI.addNote(track, channel, pitch, time, duration, volume)
-                        except:
+                        except Exception:
                             pass
 
                         time = time + note.duration

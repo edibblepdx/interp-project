@@ -32,7 +32,7 @@
          | join_exp ">=" join_exp -> geq
          | join_exp
 
-?join_exp: join_exp "|" arith_exp1 -> join  //= DOMAIN =//
+?join_exp: arith_exp1 "|" join_exp -> join  //= DOMAIN =//
          | arith_exp1
 
 ?arith_exp1: arith_exp1 "+" arith_exp2 -> add
