@@ -1,5 +1,12 @@
 # interp-project
 
+# Changes to Milestone 1
+
+- `Tune` is no longer a literal type; it is now a value type. `Note` now exists
+  as the literal type.
+
+- There is a new slice operator which can be used as `Tune[begin:end]`
+
 # What are Notes and Tunes?
 
 A <em>Literal</em> `Note` is a tuple of `(pitch, duration)`.
@@ -18,12 +25,21 @@ myTune[1:2] -> [(B, 2)]
 `Tune` exists only as a value type. Only a `Note` exists as a literal. But
 evaluating a `Note` returns a `Tune`.
 
-# Changes to Milestone 1
+# Operators
 
-- `Tune` is no longer a literal type; it is now a value type. `Note` now exists
-  as the literal type.
+- Tunes can be multiplied on the right by an integer to speed up or slow down the
+  Tune. Positive integers will speed up the Tune and negative integers will slow
+  down the Tune.
 
-- There is a new slice operator which can be used as `Tune[begin:end]`
+- Tunes can be added to on the right by an integer to transpose their pitch
+  by an integer number of half-steps.
+
+- Tunes can be compared with `==` and `!=` for strict equality.
+
+- Tunes and Notes can be joined to create longer Tunes.
+
+- Tunes and Notes (since Notes evaluate to Tunes) can be sliced to get a subset 
+  of a Tune.
 
 # Test File
 

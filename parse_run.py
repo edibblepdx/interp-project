@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
 
-import test_domain
-import unittest
-
 from lark import Lark, Token, ParseTree, Transformer
 from lark.exceptions import VisitError
 from pathlib import Path
@@ -180,6 +177,9 @@ def just_parse(s: str) -> (Expr|None):
 
 
 if __name__ == "__main__":
+    import test_domain
+    import unittest
+
     parse_and_run("30 + 12")
     parse_and_run("(A, 1) | (B, 2)")
     parse_and_run("30 / 10")

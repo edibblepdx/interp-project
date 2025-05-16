@@ -163,6 +163,31 @@ class TestEvalDomain(TestCase):
         expr = Slice(Join(Note("A", 1), Note("B", 2)), Lit(1), Lit(2))
         self.expect(expr, Tune([Note("B", 2)]))
 
+    def test_19(self):
+        # Geq integers
+        expr = Geq(Lit(42), Lit(0))
+        self.expect(expr, True)
+        expr = Geq(Lit(42), Lit(42))
+        self.expect(expr, True)
+        expr = Geq(Lit(0), Lit(42))
+        self.expect(expr, False)
+
+    def test_20(self):
+        # Leq integers
+        expr = Leq(Lit(42), Lit(0))
+        self.expect(expr, False)
+        expr = Leq(Lit(42), Lit(42))
+        self.expect(expr, True)
+        expr = Leq(Lit(0), Lit(42))
+        self.expect(expr, True)
+
+    def test_21(self):
+        # Neq integers
+        expr = Neq(Lit(42), Lit(0))
+        self.expect(expr, True)
+        expr = Neq(Lit(42), Lit(42))
+        self.expect(expr, False)
+
 
 class TestParseDomain(TestCase):
     def parse(self, concrete:str, expected):

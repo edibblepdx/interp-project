@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 
-import test_domain
-import unittest
-
 # NOTE: midiutil is included as suggested in the project information
 from midiutil import MIDIFile  # version 1.2.1
 
@@ -11,7 +8,7 @@ from dataclasses import dataclass
 from typing import Any, TypeGuard
 
 # ==============================================================================
-# STANDARD TYPES
+# TYPES
 # ==============================================================================
 
 type Literal = int | bool | Note
@@ -25,9 +22,6 @@ type Binding[V] = tuple[str, V]  # this tuple type is always a pair
 type Env[V] = tuple[Binding[V], ...]  # this tuple type has arbitrary length
 emptyEnv: Env[Any] = ()  # the empty environment has no bindings
 
-# ==============================================================================
-# DOMAIN SPECIFIC TYPES
-# ==============================================================================
 
 # C-Major scale
 # https://computermusicresource.com/midikeys.html
@@ -78,6 +72,9 @@ class Join:
 
 
 # DOMAIN SPECIFIC EXTENSION
+# ==============================================================================
+# NEW OPERATOR TO MAKE UP LOST POINTS ON MILESTONE 1
+# ==============================================================================
 @dataclass
 class Slice:
     """{Tune, Int, Int} Slice"""
@@ -86,7 +83,9 @@ class Slice:
     end: Expr
     def __str__(self) -> str:
         return f"{self.tune}[{self.start}:{self.end}]"
-
+# ==============================================================================
+# NEW OPERATOR TO MAKE UP LOST POINTS ON MILESTONE 1
+# ==============================================================================
 
 @dataclass
 class Lit:
@@ -607,6 +606,9 @@ def run(e: Expr, writeMidi: bool = False):
 
 
 if __name__ == "__main__":
+    import unittest
+    import test_domain
+
     run(Note("A", 1))
     run(
         Join(Note("A", 1), Note("B", 2))
