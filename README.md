@@ -17,6 +17,12 @@ Evaluating a `Note` returns a `Tune` that contains a single note. Multiple `Tune
 and `Notes` can be joined using `|` to create longer `Tunes`. A `Tune` can be
 sliced using `[start:end]` to get a subsequence of the `Tune`.
 
+Tunes can be written to midi format by setting `writeMidi=True` in a call to `run`.
+
+```
+run(expr, writeMidi=True)
+```
+
 ```
 myTune = (A, 1) | (B, 2) | (C, 3)
 myTune[1:2] -> [(B, 2)]
@@ -41,7 +47,7 @@ evaluating a `Note` returns a `Tune`.
 - Tunes and Notes (since Notes evaluate to Tunes) can be sliced to get a subset 
   of a Tune.
 
-# Precedence
+# Operator Precedence
 
 > In order of Highest to Lowest
 
@@ -59,7 +65,7 @@ literals name parenthesized-expr func-application let-in-end letfun-in-end
 if-then-else
 ```
 
-`|` is right associative. `==`, `<`, `>`, `<=`, `>=` are non-associative.
+`|` is right-associative. `==`, `<`, `>`, `<=`, `>=` are non-associative.
 And all remaining binary operators are left-associative
 
 # Test File
