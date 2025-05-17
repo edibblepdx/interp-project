@@ -212,80 +212,87 @@ class TestParseDomain(TestCase):
 
     def test_02(self):
         self.parse(
-        "(A, 1) | (B, 2) | (C, 3)",
-        Join(Note("A", 1), Join(Note("B", 2), Note("C", 3)))
-    )
+            "(A, 1) | (B, 2) | (C, 3)",
+            Join(Note("A", 1), Join(Note("B", 2), Note("C", 3)))
+        )
 
     def test_03(self):
         self.parse(
-        "(A, 1) + 2",
-        Add(Note("A", 1), Lit(2))
-    )
+            "(A, 1) + 2",
+            Add(Note("A", 1), Lit(2))
+        )
 
     def test_04(self):
         self.parse(
-        "(A, 1) - 2",
-        Sub(Note("A", 1), Lit(2))
-    )
+            "(A, 1) - 2",
+            Sub(Note("A", 1), Lit(2))
+        )
 
     def test_05(self):
         self.parse(
-        "(A, 1) * 2",
-        Mul(Note("A", 1), Lit(2))
-    )
+            "(A, 1) * 2",
+            Mul(Note("A", 1), Lit(2))
+        )
 
     def test_06(self):
         self.parse(
-        "(A, 1) * -2",
-        Mul(Note("A", 1), Neg(Lit(2)))
-    )
+            "(A, 1) * -2",
+            Mul(Note("A", 1), Neg(Lit(2)))
+        )
 
     def test_07(self):
         self.parse(
-        "(((A, 2) | (B, 4)) * 2)",
-        Mul(Join(Note("A", 2), Note("B", 4)), Lit(2))
-    )
+            "(((A, 2) | (B, 4)) * 2)",
+            Mul(Join(Note("A", 2), Note("B", 4)), Lit(2))
+        )
 
     def test_08(self):
         self.parse(
-        "(((A, 2) | (B, 4)) * -2)",
-        Mul(Join(Note("A", 2), Note("B", 4)), Neg(Lit(2)))
-    )
+            "(((A, 2) | (B, 4)) * -2)",
+            Mul(Join(Note("A", 2), Note("B", 4)), Neg(Lit(2)))
+        )
 
     def test_09(self):
         self.parse(
-        "(A, 1) == (A, 1)",
-        Eq(Note("A", 1), Note("A", 1))
-    )
+            "(A, 1) == (A, 1)",
+            Eq(Note("A", 1), Note("A", 1))
+        )
 
     def test_10(self):
         self.parse(
-        "(A, 1) != (A, 1)",
-        Neq(Note("A", 1), Note("A", 1))
-    )
+            "(A, 1) != (A, 1)",
+            Neq(Note("A", 1), Note("A", 1))
+        )
+
     def test_11(self):
         self.parse(
-        "((A, 1) | (B, 2)) == ((A, 1) | (B, 2))",
-        Eq(Join(Note("A", 1), Note("B", 2)), Join(Note("A", 1), Note("B", 2)))
-    )
+            "((A, 1) | (B, 2)) == ((A, 1) | (B, 2))",
+            Eq(Join(Note("A", 1), Note("B", 2)), Join(Note("A", 1), Note("B", 2)))
+        )
 
     def test_12(self):
         self.parse(
-        "((A, 1) | (B, 2)) != ((A, 1) | (B, 2))",
-        Neq(Join(Note("A", 1), Note("B", 2)), Join(Note("A", 1), Note("B", 2)))
-    )
+            "((A, 1) | (B, 2)) != ((A, 1) | (B, 2))",
+            Neq(Join(Note("A", 1), Note("B", 2)), Join(Note("A", 1), Note("B", 2)))
+        )
 
     def test_13(self):
         self.parse(
-        "(A, 1)[1:2]",
-        Slice(Note("A", 1), Lit(1), Lit(2))
-    )
+            "(A, 1)[1:2]",
+            Slice(Note("A", 1), Lit(1), Lit(2))
+        )
 
     def test_14(self):
         self.parse(
-        "((A, 1) | (B, 2))[1:2]",
-        Slice(Join(Note("A", 1), Note("B", 2)), Lit(1), Lit(2))
-    )
+            "((A, 1) | (B, 2))[1:2]",
+            Slice(Join(Note("A", 1), Note("B", 2)), Lit(1), Lit(2))
+        )
+
+    def test_15(self):
+        self.parse(
+            "letfun getSlice (tune) = tune[1:2] in getSlice(((A, 1) | (B, 2) | (C, 3))) end",
+            Letfun("getSlice", "tune", Slice(Name("tune"), Lit(1), Lit(2)), App(Name("getSlice"), Join(Note("A", 1), Join(Note("B", 2), Note("C", 3)))))
+        )
 
 
 if __name__ == "__main__":
