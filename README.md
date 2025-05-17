@@ -41,6 +41,20 @@ run(expr, writeMidi=True)
 `Tune` exists only as a value type. Only a `Note` exists as a literal. But
 evaluating a `Note` returns a `Tune`.
 
+# How to use Notes and Tunes
+
+A `Note` literal has the form `(pitch, duration)`, where pitch is a note on the
+chromatic scale or a rest at middle C. Transposing a pitch will wrap.
+
+> CHROMATIC = (C, C#, D, D#, E, F, F#, G, G#, A, A#, B)
+> REST = R
+
+Creating a `Note` will evaluate to a `Tune` which has the form `[Note, ...]`.
+Multiple notes or tunes can be concatenated with `|`, compared for equality
+with `==` or `!=`, pitch shifted with `+` or `-` on the right, and sped up or
+slowed down with `*` on the right. Positive integers will speed up the tune and
+negative integers will slow down the tune.
+
 # Operators
 
 - Tunes can be multiplied on the right by an integer to speed up or slow down the
