@@ -41,6 +41,28 @@ evaluating a `Note` returns a `Tune`.
 - Tunes and Notes (since Notes evaluate to Tunes) can be sliced to get a subset 
   of a Tune.
 
+# Precedence
+
+> In order of Highest to Lowest
+
+```
+literals name parenthesized-expr func-application let-in-end letfun-in-end
+[:] (slice)
+- (unary)
+* /
++ -
+| (join)
+== < > <= >=
+!
+&&
+||
+if-then-else
+```
+
+>`|` is right associative
+>`==`, `<`, `>`, `<=`, `>=` are non-associative
+>all remaining binary operators are left-associative
+
 # Test File
 
 - `interp.py` and `parse_run.py` each import and run their respective TestCase
