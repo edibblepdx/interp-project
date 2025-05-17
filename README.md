@@ -59,9 +59,8 @@ literals name parenthesized-expr func-application let-in-end letfun-in-end
 if-then-else
 ```
 
->`|` is right associative
->`==`, `<`, `>`, `<=`, `>=` are non-associative
->all remaining binary operators are left-associative
+`|` is right associative. `==`, `<`, `>`, `<=`, `>=` are non-associative.
+And all remaining binary operators are left-associative
 
 # Test File
 
