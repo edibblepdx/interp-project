@@ -53,9 +53,10 @@ Creating a `Note` will evaluate to a `Tune` which has the form `[Note, ...]`.
 Multiple notes or tunes can be concatenated with `|`, compared for equality
 with `==` or `!=`, pitch shifted with `+` or `-` on the right, and sped up or
 slowed down with `*` on the right. Positive integers will speed up the tune and
-negative integers will slow down the tune.
+negative integers will slow down the tune. Tunes and Notes can be sliced with
+`[start:end]` to get smaller tunes.
 
-# Operators
+# Operator Summary
 
 - Tunes can be multiplied on the right by an integer to speed up or slow down the
   Tune. Positive integers will speed up the Tune and negative integers will slow
@@ -64,11 +65,11 @@ negative integers will slow down the tune.
 - Tunes can be added to on the right by an integer to transpose their pitch
   by an integer number of half-steps.
 
-- Tunes can be compared with `==` and `!=` for strict equality.
+- Tunes can be compared for strict equality.
 
 - Tunes and Notes can be joined to create longer Tunes.
 
-- Tunes and Notes (since Notes evaluate to Tunes) can be sliced to get a subset 
+- Tunes and Notes (since Notes evaluate to Tunes) can be sliced to get a subset
   of a Tune.
 
 # Operator Precedence
