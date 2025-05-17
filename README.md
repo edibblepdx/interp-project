@@ -7,6 +7,16 @@
 
 - There is a new slice operator which can be used as `Tune[begin:end]`
 
+# Requirements
+
+```
+Package     Version
+----------- -------
+interegular 0.3.3
+lark        1.2.2
+MIDIUtil    1.2.1
+```
+
 # What are Notes and Tunes?
 
 A <em>Literal</em> `Note` is a tuple of `(pitch, duration)`.
@@ -17,14 +27,14 @@ Evaluating a `Note` returns a `Tune` that contains a single note. Multiple `Tune
 and `Notes` can be joined using `|` to create longer `Tunes`. A `Tune` can be
 sliced using `[start:end]` to get a subsequence of the `Tune`.
 
-```
+```python
 myTune = (A, 1) | (B, 2) | (C, 3)
 myTune[1:2] -> [(B, 2)]
 ```
 
 Tunes can be written to midi format by setting `writeMidi=True` in a call to `run`.
 
-```
+```python
 run(expr, writeMidi=True)
 ```
 
