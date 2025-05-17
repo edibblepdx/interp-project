@@ -294,6 +294,12 @@ class TestParseDomain(TestCase):
             Letfun("getSlice", "tune", Slice(Name("tune"), Lit(1), Lit(2)), App(Name("getSlice"), Join(Note("A", 1), Join(Note("B", 2), Note("C", 3)))))
         )
 
+    def test_16(self):
+        self.parse(
+            "let t1 = (A, 1) in letfun f(t2) = t1 | t2 in f((B, 2)) end end",
+            Let("t1", Note("A", 1), Letfun("f", "t2", Join(Name("t1"), Name("t2")), App(Name("f"), Note("B", 2))))
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

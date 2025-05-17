@@ -186,6 +186,12 @@ if __name__ == "__main__":
     parse_and_run("true")
     parse_and_run("((A, 5) | (B, 2))[1:2]")
 
+    # functions
+    parse_and_run("letfun getSlice (tune) = tune[1:2] in getSlice(((A, 1) | (B, 2) | (C, 3))) end") # [(B, 2)] Matches
+
+    # functions and closures
+    parse_and_run("let t1 = (A, 1) in letfun f(t2) = t1 | t2 in f((B, 2)) end end") # [(A, 1), (B, 2)] Matches
+
     loader = unittest.TestLoader()
     suite = loader.loadTestsFromTestCase(testCaseClass=test_domain.TestParseDomain)
     runner = unittest.TextTestRunner()
