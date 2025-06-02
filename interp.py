@@ -1,11 +1,16 @@
 #!/usr/bin/env python
 
+# ==============================================================================
+# There are some misc tests at the bottom of this file, but it also runs a test
+# suite defined in eval_domain.py. The README has more information.
+# ==============================================================================
+
 # NOTE: midiutil is included as suggested in the project information
 from midiutil import MIDIFile  # version 1.2.1
 
 import os  # to play the midi
 from dataclasses import dataclass
-from typing import Any, TypeGuard
+from typing import Any
 
 # ==============================================================================
 # TYPES
@@ -18,6 +23,7 @@ type Expr = (
     | Slice | Letfun | App
 )
 
+type Loc[V] = list[V] # always a singleton list
 type Binding[V] = tuple[str, V]  # this tuple type is always a pair
 type Env[V] = tuple[Binding[V], ...]  # this tuple type has arbitrary length
 emptyEnv: Env[Any] = ()  # the empty environment has no bindings
@@ -72,9 +78,6 @@ class Join:
 
 
 # DOMAIN SPECIFIC EXTENSION
-# ==============================================================================
-# NEW OPERATOR TO MAKE UP LOST POINTS ON MILESTONE 1
-# ==============================================================================
 @dataclass
 class Slice:
     """{Tune, Int, Int} Slice"""
@@ -83,9 +86,6 @@ class Slice:
     end: Expr
     def __str__(self) -> str:
         return f"{self.tune}[{self.start}:{self.end}]"
-# ==============================================================================
-# NEW OPERATOR TO MAKE UP LOST POINTS ON MILESTONE 1
-# ==============================================================================
 
 @dataclass
 class Lit:
@@ -280,6 +280,7 @@ class EvalError(Exception):
     """Invalid Expressions"""
     pass
 
+
 class EnvError(Exception):
     """Invalid Environment"""
     pass
@@ -298,6 +299,18 @@ def extendEnv[V](name: str, value: V, env: Env[V]) -> Env[V]:
     """Return a new environment that extends the input environment
     env with a new binding from name to value"""
     return ((name, value),) + env
+
+
+def newLoc[V](value: V) -> Loc[V]:
+    return [value]
+
+
+def getLoc[V](loc: Loc[V]) -> V:
+    return loc[0]
+
+
+def setLoc[V](loc: Loc[V], value: V) -> None:
+    loc[0] = value
 
 
 def eval(e: Expr) -> (Literal|Tune):
@@ -514,11 +527,13 @@ def evalInEnv(env: Env[Literal], e: Expr) -> (Literal|Tune):
         # ------------
 
         case Name(n):
-            return lookupEnv(n, env)
+            loc = lookupEnv(n, env)
+            return getLoc(loc)
 
         case Let(n, d, b):
             v = evalInEnv(env, d)
-            newEnv = extendEnv(n, v, env)
+            loc = newLoc(v)
+            newEnv = extendEnv(n, loc, env)
             return evalInEnv(newEnv, b)
 
         # Join (represented by '|')
@@ -550,16 +565,18 @@ def evalInEnv(env: Env[Literal], e: Expr) -> (Literal|Tune):
 
         case Letfun(n, p, b, i):
             c = Closure(p, b, env)
-            newEnv = extendEnv(n, c, env)
+            loc = newLoc(c)
+            newEnv = extendEnv(n, loc, env)
             c.env = newEnv
             return evalInEnv(newEnv, i)
 
         case App(f, a):
             fun = evalInEnv(env, f)
-            arg = evalInEnv(env, a)
             match fun:
                 case Closure(p, b, cenv):
-                    newEnv = extendEnv(p, arg, cenv) 
+                    arg = evalInEnv(env, a)
+                    loc = newLoc(arg)
+                    newEnv = extendEnv(p, loc, cenv)
                     return evalInEnv(newEnv, b)
                 case _:
                     raise EvalError("application of non-function")

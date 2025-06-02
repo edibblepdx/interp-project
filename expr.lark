@@ -4,10 +4,6 @@
 
 %ignore WS
 
-//    Lit | Add | Sub | Mul | Div | Neg | And | Or | Not | Eq
-//    | Neq | Lt | Gt | Leq | Geq | If | Let | Name | Note | Join
-//    | Slice | Letfun | App
-
 ?start: exp
 
 ?exp: if_exp

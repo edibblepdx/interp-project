@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 
+# ==============================================================================
+# There are some misc tests at the bottom of this file, but it also runs a test
+# suite defined in eval_domain.py. The README has more information.
+# ==============================================================================
+
 from lark import Lark, Token, ParseTree, Transformer
 from lark.exceptions import VisitError
 from pathlib import Path
