@@ -642,8 +642,9 @@ def evalInEnv(env: Env[Literal], e: Expr) -> (Literal|Tune):
     return # type: ignore
 
 
-def run(e: Expr, writeMidi: bool = False):
-    print(f"running {e}")
+def run(e: Expr, pretty = True, writeMidi: bool = False):
+    if pretty:
+        print(f"running {e}")
     try:
         match eval(e):
             case Tune(notes):
