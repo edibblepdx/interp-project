@@ -274,6 +274,26 @@ class Closure:
     param: str
     body: Expr
     env: Env[Value]
+    def __str__(self) -> str:
+        return f"({self.param}, {self.body})"
+
+
+@dataclass
+class Assign:
+    """Variable Assignment"""
+    name: str
+    value: Expr
+    def __str__(self) -> str:
+        return f"{self.name} := {self.value}"
+
+
+@dataclass
+class Seq:
+    """Sequence Expression"""
+    expr1: Expr
+    expr1: Expr
+    def __str__(self) -> str:
+        return f"{self.expr1}; {self.expr2}"
 
 
 class EvalError(Exception):
@@ -580,6 +600,25 @@ def evalInEnv(env: Env[Literal], e: Expr) -> (Literal|Tune):
                     return evalInEnv(newEnv, b)
                 case _:
                     raise EvalError("application of non-function")
+
+        # Variable Assignment
+        # -------------------
+
+        case Assign(n, v):
+            loc = lookupEnv(n)
+            val = evalInEnv(v)
+            setLoc(loc, val)
+            return val
+
+        # Sequence Expression
+        # -------------------
+
+        case Assign(e1, e2):
+            evalInEnv(env, e1)
+            return evalInEnv(env, e2)
+
+        # Invalid Expression
+        # ------------------
 
         case _:
             raise EvalError(f"unknown expression type: {e}")

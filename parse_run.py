@@ -13,7 +13,7 @@ from interp import (
     Literal, Note, Expr,
     Lit, Add, Sub, Mul, Div, Neg, And, Or, Not, Eq,
     Neq, Lt, Gt, Leq, Geq, If, Let, Name, Note, Join, 
-    Slice, Letfun, App,
+    Slice, Letfun, App, Assign, Seq,
     run
 )
 
@@ -119,6 +119,12 @@ class ToExpr(Transformer[Token, Expr]):
 
     def app(self, args: tuple[Expr, Expr]) -> Expr:
         return App(*args)
+
+    def assign(self, args: tuple[Token, Expr]) -> Expr:
+        return Assign(args[0].value, args[1])
+
+    def seq(self, args: tuple[Expr, Expr]) -> Expr:
+        return Seq(*args)
 
     # ambiguity marker
     def _ambig(self, _) -> Expr:
