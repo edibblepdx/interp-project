@@ -11,9 +11,11 @@
 ?seq_exp: assign_exp ";" seq_exp -> seq
         | assign_exp
 
-?assign_exp: NAME ":=" if_exp -> assign
-           | if_exp
+?assign_exp: NAME ":=" show_exp -> assign
+           | show_exp
 
+?show_exp: "show" show_exp -> show
+           | if_exp
 
 ?if_exp: "if" if_exp "then" if_exp "else" if_exp -> if_
        | or_exp

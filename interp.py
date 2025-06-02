@@ -20,7 +20,7 @@ type Literal = int | bool | Note
 type Expr = (
     Lit | Add | Sub | Mul | Div | Neg | And | Or | Not | Eq
     | Neq | Lt | Gt | Leq | Geq | If | Let | Name | Note | Join
-    | Slice | Letfun | App
+    | Slice | Letfun | App | Assign | Seq | Show
 )
 
 type Loc[V] = list[V] # always a singleton list
@@ -294,6 +294,14 @@ class Seq:
     expr1: Expr
     def __str__(self) -> str:
         return f"{self.expr1}; {self.expr2}"
+
+
+@dataclass
+class Show:
+    """Show Expression Value"""
+    expr: Expr
+    def __str__(self) -> str:
+        return f"show {self.expr}"
 
 
 class EvalError(Exception):
@@ -612,6 +620,14 @@ def evalInEnv(env: Env[Literal], e: Expr) -> (Literal|Tune):
 
         # Sequence Expression
         # -------------------
+
+        case Show(e):
+            v = evalInEnv(env, e)
+            print(f"show({e}) evaluates to {v}")
+            return v
+
+        # Show Expression Value
+        # ---------------------
 
         case Assign(e1, e2):
             evalInEnv(env, e1)

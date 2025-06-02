@@ -12,8 +12,8 @@ from pathlib import Path
 from interp import (
     Literal, Note, Expr,
     Lit, Add, Sub, Mul, Div, Neg, And, Or, Not, Eq,
-    Neq, Lt, Gt, Leq, Geq, If, Let, Name, Note, Join, 
-    Slice, Letfun, App, Assign, Seq,
+    Neq, Lt, Gt, Leq, Geq, If, Let, Name, Note, Join,
+    Slice, Letfun, App, Assign, Seq, Show,
     run
 )
 
@@ -125,6 +125,9 @@ class ToExpr(Transformer[Token, Expr]):
 
     def seq(self, args: tuple[Expr, Expr]) -> Expr:
         return Seq(*args)
+
+    def show(self, args: tuple[Expr]) -> Expr:
+        return Show(*args)
 
     # ambiguity marker
     def _ambig(self, _) -> Expr:
