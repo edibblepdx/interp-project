@@ -61,3 +61,4 @@
      | "let" NAME "=" exp "in" exp "end" -> let
      | "letfun" NAME "(" NAME ")" "=" exp "in" exp "end" -> letfun
      | atom "(" exp ")" -> app
+     | "write" exp -> write

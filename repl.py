@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from parse_run import parse, genAST, AmbiguousParse, ParseError
-from interp import run, EvalError, EnvError
+from interp import run, EvalError, EnvError, RuntimeError
 from pathlib import Path
 import readline
 
@@ -31,6 +31,8 @@ def driver():
             print(f"EvalError: {e}")
         except EnvError as e:
             print(f"EnvError: {e}")
+        except RuntimeError as e:
+            print(f"RuntimeError: {e}")
         except EOFError:
             break
 

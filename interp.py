@@ -20,7 +20,7 @@ type Literal = int | bool | Note
 type Expr = (
     Lit | Add | Sub | Mul | Div | Neg | And | Or | Not | Eq
     | Neq | Lt | Gt | Leq | Geq | If | Let | Name | Note | Join
-    | Slice | Letfun | App | Assign | Seq | Show
+    | Slice | Letfun | App | Assign | Seq | Show | Write
 )
 
 type Loc[V] = list[V] # always a singleton list
@@ -291,7 +291,7 @@ class Assign:
 class Seq:
     """Sequence Expression"""
     expr1: Expr
-    expr1: Expr
+    expr2: Expr
     def __str__(self) -> str:
         return f"{self.expr1}; {self.expr2}"
 
@@ -304,6 +304,20 @@ class Show:
         return f"show {self.expr}"
 
 
+@dataclass
+class Read:
+    """Read Integer"""
+    def __str__(self) -> str:
+        return f"read"
+
+@dataclass
+class Write:
+    """Write Midi"""
+    tune: Expr
+    def __str__(self) -> str:
+        return f"read"
+
+
 class EvalError(Exception):
     """Invalid Expressions"""
     pass
@@ -311,6 +325,11 @@ class EvalError(Exception):
 
 class EnvError(Exception):
     """Invalid Environment"""
+    pass
+
+
+class RuntimeError(Exception):
+    """Input/Output"""
     pass
 
 
@@ -621,17 +640,41 @@ def evalInEnv(env: Env[Literal], e: Expr) -> (Literal|Tune):
         # Sequence Expression
         # -------------------
 
+        case Seq(e1, e2):
+            evalInEnv(env, e1)
+            return evalInEnv(env, e2)
+
+        # Show Expression Value
+        # ---------------------
+
         case Show(e):
             v = evalInEnv(env, e)
             print(f"show({e}) evaluates to {v}")
             return v
 
-        # Show Expression Value
-        # ---------------------
+        # Read Integer
+        # ------------
 
-        case Assign(e1, e2):
-            evalInEnv(env, e1)
-            return evalInEnv(env, e2)
+        case Read():
+            try:
+                v = int(input("enter Integer: "))
+            except Exception:
+                raise RuntimeError("Expected Integer")
+            return v
+
+        # Midi Operations
+        # ---------------
+
+        case Write(e):
+            match(evalInEnv(env, e)):
+                case Tune(notes):
+                    try:
+                        writeMidi(notes)
+                        return True
+                    except Exception as e:
+                        raise RuntimeError(f"Failed to write Midi: {e}")
+                case _:
+                    raise RuntimeError("Expected Tune")
 
         # Invalid Expression
         # ------------------
@@ -641,6 +684,32 @@ def evalInEnv(env: Env[Literal], e: Expr) -> (Literal|Tune):
 
     return # type: ignore
 
+def writeMidi(notes: list[Note]):
+    if writeMidi:
+        track = 0
+        channel = 0
+        time = 0  # In beats
+        tempo = 250  # In BPM
+        volume = 100  # 0-127, as per the MIDI standard
+
+        MyMIDI = MIDIFile(1)
+        MyMIDI.addTempo(track, time, tempo)
+
+        for note in notes:
+            try:
+                pitch = CHROMATIC.index(note.pitch) + 60
+                duration = note.duration
+                MyMIDI.addNote(track, channel, pitch, time, duration, volume)
+            except Exception:
+                pass
+
+            time = time + note.duration
+
+        with open("tune.mid", "wb") as output_file:
+            MyMIDI.writeFile(output_file)
+
+def runMidi():
+    pass
 
 def run(e: Expr, pretty = True, writeMidi: bool = False):
     if pretty:
@@ -651,27 +720,8 @@ def run(e: Expr, pretty = True, writeMidi: bool = False):
                 print(f"result: {Tune(notes)}")
 
                 if writeMidi:
-                    track = 0
-                    channel = 0
-                    time = 0  # In beats
-                    tempo = 250  # In BPM
-                    volume = 100  # 0-127, as per the MIDI standard
+                    writeMidi(notes)
 
-                    MyMIDI = MIDIFile(1)
-                    MyMIDI.addTempo(track, time, tempo)
-
-                    for note in notes:
-                        try:
-                            pitch = CHROMATIC.index(note.pitch) + 60
-                            duration = note.duration
-                            MyMIDI.addNote(track, channel, pitch, time, duration, volume)
-                        except Exception:
-                            pass
-
-                        time = time + note.duration
-
-                    with open("tune.mid", "wb") as output_file:
-                        MyMIDI.writeFile(output_file)
             case o:
                 print(f"result: {o}")
     except EvalError as err:
