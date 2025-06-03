@@ -23,6 +23,14 @@ parser = Lark(Path('expr.lark').read_text(), parser='earley', ambiguity='explici
 #for checking against ambiguity:
 #parser = Lark(Path('expr.lark').read_text(), parser='lalr', strict='True')
 
+#to test ambiguities
+#from lark import Lark, Tree, Transformer
+#from lark.visitors import CollapseAmbiguities
+#parser = Lark(Path('expr.lark').read_text(), parser='earley', ambiguity='explicit')
+#t = parser.parse('show - 5')
+#for x in CollapseAmbiguities().transform(t):
+    #print(x.pretty())
+
 
 class ParseError(Exception):
     pass

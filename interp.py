@@ -284,7 +284,7 @@ class Assign:
     name: str
     value: Expr
     def __str__(self) -> str:
-        return f"{self.name} := {self.value}"
+        return f"({self.name} := {self.value})"
 
 
 @dataclass
@@ -293,7 +293,7 @@ class Seq:
     expr1: Expr
     expr2: Expr
     def __str__(self) -> str:
-        return f"{self.expr1}; {self.expr2}"
+        return f"({self.expr1}; {self.expr2})"
 
 
 @dataclass
@@ -301,7 +301,7 @@ class Show:
     """Show Expression Value"""
     expr: Expr
     def __str__(self) -> str:
-        return f"show {self.expr}"
+        return f"(show {self.expr})"
 
 
 @dataclass
@@ -632,8 +632,11 @@ def evalInEnv(env: Env[Literal], e: Expr) -> (Literal|Tune):
         # -------------------
 
         case Assign(n, v):
-            loc = lookupEnv(n)
-            val = evalInEnv(v)
+            loc = lookupEnv(n, env) # TODO: maybe swap the name and env here so it's less confusing
+            # WARN: I honestly do not understand why you would want this behavior at all.
+            if isinstance(getLoc(loc), Closure):
+                raise EvalError("attempted assignment to name bound function")
+            val = evalInEnv(env, v)
             setLoc(loc, val)
             return val
 
@@ -649,7 +652,8 @@ def evalInEnv(env: Env[Literal], e: Expr) -> (Literal|Tune):
 
         case Show(e):
             v = evalInEnv(env, e)
-            print(f"show({e}) evaluates to {v}")
+            # TODO: add more than bool and int
+            print(v)
             return v
 
         # Read Integer

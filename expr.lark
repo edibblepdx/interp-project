@@ -1,23 +1,25 @@
 %import common.INT -> INT
-%import common.CNAME -> NAME
+%import common.CNAME
 %import common.WS
 
 %ignore WS
+
+//SHOW: "show"
+NAME: /(?!show)([_a-zA-Z])([_a-zA-Z0-9])*/
+//NAME: CNAME
 
 ?start: exp
 
 ?exp: seq_exp
 
-?seq_exp: assign_exp ";" seq_exp -> seq
-        | assign_exp
+?seq_exp: if_exp ";" seq_exp -> seq
+        | if_exp
 
-?assign_exp: NAME ":=" show_exp -> assign
-           | show_exp
-
-?show_exp: "show" show_exp -> show
-           | if_exp
-
-?if_exp: "if" if_exp "then" if_exp "else" if_exp -> if_
+// tests 40 and 41 require cond and then branch to be exp
+// test 23 requires else branch to be recursive (below sequence)
+?if_exp: "if" exp "then" exp "else" if_exp -> if_
+       | "show" if_exp -> show // recursive in test 75
+       | NAME ":=" if_exp -> assign
        | or_exp
 
 ?or_exp: or_exp "||" and_exp -> or_
@@ -62,3 +64,19 @@
      | "letfun" NAME "(" NAME ")" "=" exp "in" exp "end" -> letfun
      | atom "(" exp ")" -> app
      | "write" exp -> write
+
+
+
+// odd that the document states if, assign, show should have same precedence
+// but that the tests show "if < show < assign" behavior
+// otherwise tests like 74 and 95 fail
+
+//?if_exp: "if" if_exp "then" if_exp "else" if_exp -> if_
+       //| show_exp
+
+//?show_exp: "show" show_exp -> show // recursive in test 75
+         //| assign_exp
+
+//?assign_exp: NAME ":=" or_exp -> assign
+           //| or_exp
+
