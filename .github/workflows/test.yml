@@ -1,4 +1,4 @@
-name: Python package
+name: interp-project
 
 on: [push]
 
@@ -9,11 +9,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.13'
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip interegular lark midiutil
       - name: Run Tests
-        run: python3 test1.py
-        run: python3 test2.py
-        run: python3 test3.py
-        run: python3 interp.py
-        run: python3 parse_run.py
+        run: |
+          python test1.py
+          python test2.py
+          python test3.py
+          python interp.py
+          python parse_run.py
