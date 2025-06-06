@@ -1,0 +1,19 @@
+name: Python package
+
+on: [push]
+
+jobs:
+  test:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          python-version: '3.13'
+      - name: Run Tests
+        run: python3 test1.py
+        run: python3 test2.py
+        run: python3 test3.py
+        run: python3 interp.py
+        run: python3 parse_run.py

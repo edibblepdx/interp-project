@@ -9,6 +9,7 @@
 from midiutil import MIDIFile  # version 1.2.1
 
 import os  # to play the midi
+import tempfile  # also to play the midi
 from dataclasses import dataclass
 from typing import Any
 
@@ -658,8 +659,7 @@ def evalInEnv(env: Env[Literal], e: Expr) -> (Literal|Tune):
         # -------------------
 
         case Assign(n, v):
-            loc = lookupEnv(n, env) # TODO: maybe swap the name and env here so it's less confusing
-            # WARN: I honestly do not understand why you would want this behavior at all.
+            loc = lookupEnv(n, env)
             if isinstance(getLoc(loc), Closure):
                 raise EvalError("attempted assignment to name bound function")
             val = evalInEnv(env, v)
@@ -678,8 +678,17 @@ def evalInEnv(env: Env[Literal], e: Expr) -> (Literal|Tune):
 
         case Show(e):
             v = evalInEnv(env, e)
-            # TODO: add more than bool and int
-            print(v)
+            match v:
+                case Tune(notes):
+                    print(notes)
+                    try:
+                        with tempfile.NamedTemporaryFile(suffix=".mid") as file:
+                            writeMidi(notes, file.name)
+                            runMidi(file.name)
+                    except Exception as e:
+                        print(f"failed to play tune: {e}")
+                case _:
+                    print(v)
             return v
 
         # Read Integer
@@ -688,9 +697,9 @@ def evalInEnv(env: Env[Literal], e: Expr) -> (Literal|Tune):
         case Read():
             try:
                 v = int(input("enter Integer: "))
+                return v
             except Exception:
                 raise RuntimeError("Expected Integer")
-            return v
 
         # Midi Operations
         # ---------------
@@ -739,31 +748,27 @@ def evalInEnv(env: Env[Literal], e: Expr) -> (Literal|Tune):
     return # type: ignore
 
 def writeMidi(notes: list[Note], name: str):
-    if os.name != 'posix':
-        raise RuntimeError("non-POSIX system")
+    track = 0
+    channel = 0
+    time = 0  # In beats
+    tempo = 250  # In BPM
+    volume = 100  # 0-127, as per the MIDI standard
 
-    if writeMidi:
-        track = 0
-        channel = 0
-        time = 0  # In beats
-        tempo = 250  # In BPM
-        volume = 100  # 0-127, as per the MIDI standard
+    MyMIDI = MIDIFile(1)
+    MyMIDI.addTempo(track, time, tempo)
 
-        MyMIDI = MIDIFile(1)
-        MyMIDI.addTempo(track, time, tempo)
+    for note in notes:
+        try:
+            pitch = CHROMATIC.index(note.pitch) + 60
+            duration = note.duration
+            MyMIDI.addNote(track, channel, pitch, time, duration, volume)
+        except Exception:
+            pass
 
-        for note in notes:
-            try:
-                pitch = CHROMATIC.index(note.pitch) + 60
-                duration = note.duration
-                MyMIDI.addNote(track, channel, pitch, time, duration, volume)
-            except Exception:
-                pass
+        time = time + note.duration
 
-            time = time + note.duration
-
-        with open(name, "wb") as output_file:
-            MyMIDI.writeFile(output_file)
+    with open(name, "wb") as output_file:
+        MyMIDI.writeFile(output_file)
 
 
 def runMidi(name: str):
@@ -780,7 +785,7 @@ def runMidi(name: str):
         raise RuntimeError(f"VLC error")
 
 
-def run(e: Expr, pretty = True, writeMidi: bool = False):
+def run(e: Expr, pretty = True, write: bool = False):
     if pretty:
         print(f"running {e}")
     try:
@@ -788,8 +793,8 @@ def run(e: Expr, pretty = True, writeMidi: bool = False):
             case Tune(notes):
                 print(f"result: {Tune(notes)}")
 
-                if writeMidi:
-                    writeMidi(notes)
+                if write:
+                    writeMidi(notes, "tune.mid")
 
             case o:
                 print(f"result: {o}")
@@ -838,7 +843,7 @@ if __name__ == "__main__":
     )
     run(
         Join(Note("A", 1), Join(Note("B", 2), Join(Note("C", 3), Note("D", 4)))),
-        writeMidi=True
+        write=True
     )
 
     loader = unittest.TestLoader()
