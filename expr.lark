@@ -1,12 +1,13 @@
 %import common.INT -> INT
 %import common.CNAME
 %import common.WS
+%import common.SH_COMMENT
 
 %ignore WS
+%ignore SH_COMMENT
 
-//SHOW: "show"
-NAME: /(?!show)([_a-zA-Z])([_a-zA-Z0-9])*/
-//NAME: CNAME
+NAME: /(?!show|write|run|repeat|reverse)([_a-zA-Z])([_a-zA-Z0-9])*/
+UNIX_PATH_NOSPACE: /[^\0 ]+/ # UNIX file path but modified to exclude spaces
 
 ?start: exp
 
@@ -16,7 +17,8 @@ NAME: /(?!show)([_a-zA-Z])([_a-zA-Z0-9])*/
         | if_exp
 
 // tests 40 and 41 require cond and then branch to be exp
-// test 23 requires else branch to be recursive (below sequence)
+// test 23 requires else branch to be recursive
+
 ?if_exp: "if" exp "then" exp "else" if_exp -> if_
        | "show" if_exp -> show // recursive in test 75
        | NAME ":=" if_exp -> assign
@@ -31,12 +33,19 @@ NAME: /(?!show)([_a-zA-Z])([_a-zA-Z0-9])*/
 ?not_exp: "!" not_exp -> not_
         | comp_exp
 
-?comp_exp: join_exp "==" join_exp -> eq
-         | join_exp "!=" join_exp -> neq
-         | join_exp "<" join_exp -> lt
-         | join_exp ">" join_exp -> gt
-         | join_exp "<=" join_exp -> leq
-         | join_exp ">=" join_exp -> geq
+?comp_exp: tune_exp "==" tune_exp -> eq
+         | tune_exp "!=" tune_exp -> neq
+         | tune_exp "<" tune_exp -> lt
+         | tune_exp ">" tune_exp -> gt
+         | tune_exp "<=" tune_exp -> leq
+         | tune_exp ">=" tune_exp -> geq
+         | tune_exp
+
+# for the keyword commands on tunes
+?tune_exp: "write" exp UNIX_PATH_NOSPACE -> write   //= DOMAIN =//
+         | "run" UNIX_PATH_NOSPACE -> run           //= DOMAIN =//
+         | "repeat" exp exp -> repeat               //= DOMAIN =//
+         | "reverse" exp -> reverse                 //= DOMAIN =//
          | join_exp
 
 ?join_exp: arith_exp1 "|" join_exp -> join  //= DOMAIN =//
@@ -53,7 +62,7 @@ NAME: /(?!show)([_a-zA-Z])([_a-zA-Z0-9])*/
 ?neg_exp: "-" neg_exp -> neg
         | slice_exp
 
-?slice_exp: slice_exp "[" atom ":" atom "]" -> slice  //= DOMAIN =//
+?slice_exp: slice_exp "[" exp ":" exp "]" -> slice  //= DOMAIN =//
           | atom
 
 ?atom: INT -> int
@@ -63,20 +72,3 @@ NAME: /(?!show)([_a-zA-Z])([_a-zA-Z0-9])*/
      | "let" NAME "=" exp "in" exp "end" -> let
      | "letfun" NAME "(" NAME ")" "=" exp "in" exp "end" -> letfun
      | atom "(" exp ")" -> app
-     | "write" exp -> write
-
-
-
-// odd that the document states if, assign, show should have same precedence
-// but that the tests show "if < show < assign" behavior
-// otherwise tests like 74 and 95 fail
-
-//?if_exp: "if" if_exp "then" if_exp "else" if_exp -> if_
-       //| show_exp
-
-//?show_exp: "show" show_exp -> show // recursive in test 75
-         //| assign_exp
-
-//?assign_exp: NAME ":=" or_exp -> assign
-           //| or_exp
-

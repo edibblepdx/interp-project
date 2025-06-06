@@ -21,6 +21,7 @@ def driver():
             t = parse(s)
             ast = genAST(t)
             run(ast) # pretty-prints and executes the AST
+            print()
         except AmbiguousParse:
             print("ambiguous parse")
         except ParseError as e:

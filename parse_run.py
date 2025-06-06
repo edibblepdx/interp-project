@@ -14,7 +14,7 @@ from interp import (
     Lit, Add, Sub, Mul, Div, Neg, And, Or, Not, Eq,
     Neq, Lt, Gt, Leq, Geq, If, Let, Name, Note, Join,
     Slice, Letfun, App, Assign, Seq, Show, Read,
-    Write,
+    Write, Run, Repeat, Reverse,
     run
 )
 
@@ -141,8 +141,21 @@ class ToExpr(Transformer[Token, Expr]):
     def show(self, args: tuple[Expr]) -> Expr:
         return Show(*args)
 
-    def write(self, args: tuple[Expr]) -> Expr:
-        return Write(*args)
+    # DOMAIN SPECIFIC EXTENSION
+    def write(self, args: tuple[Expr, Token]) -> Expr:
+        return Write(args[0], args[1].value)
+
+    # DOMAIN SPECIFIC EXTENSION
+    def run(self, args: tuple[Expr]) -> Expr:
+        return Run(args[0].value)
+
+    # DOMAIN SPECIFIC EXTENSION
+    def repeat(self, args: tuple[Expr, Expr]) -> Expr:
+        return Repeat(*args)
+
+    # DOMAIN SPECIFIC EXTENSION
+    def reverse(self, args: tuple[Expr]) -> Expr:
+        return Reverse(*args)
 
     # ambiguity marker
     def _ambig(self, _) -> Expr:

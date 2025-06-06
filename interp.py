@@ -314,8 +314,34 @@ class Read:
 class Write:
     """Write Midi"""
     tune: Expr
+    name: str
     def __str__(self) -> str:
-        return f"read"
+        return f"(write {self.tune} {self.name})"
+
+
+@dataclass
+class Run:
+    """Run Midi"""
+    name: str
+    def __str__(self) -> str:
+        return f"(run {self.name})"
+
+
+@dataclass
+class Repeat:
+    """Repeat Tune"""
+    count: Expr
+    tune: Expr
+    def __str__(self) -> str:
+        return f"(repeat {self.count} {self.tune})"
+
+
+@dataclass
+class Reverse:
+    """Reverse Tune"""
+    tune: Expr
+    def __str__(self) -> str:
+        return f"(reverse {self.tune})"
 
 
 class EvalError(Exception):
@@ -669,16 +695,40 @@ def evalInEnv(env: Env[Literal], e: Expr) -> (Literal|Tune):
         # Midi Operations
         # ---------------
 
-        case Write(e):
+        case Write(e, name):
             match(evalInEnv(env, e)):
                 case Tune(notes):
                     try:
-                        writeMidi(notes)
+                        writeMidi(notes, name)
                         return True
                     except Exception as e:
                         raise RuntimeError(f"Failed to write Midi: {e}")
                 case _:
                     raise RuntimeError("Expected Tune")
+
+        case Run(name):
+            try:
+                runMidi(name)
+                return True
+            except Exception as e:
+                raise RuntimeError(f"Failed to run Midi: {e}")
+
+        # Repeat and Reverse
+        # ------------------
+
+        case Repeat(count, tune):
+            match (evalInEnv(env, count), evalInEnv(env, tune)):
+                case (count, Tune(notes)) if isInt(count):
+                    return Tune(notes * count)
+                case (_, _):
+                    raise EvalError("expected integer and tune")
+
+        case Reverse(tune):
+            match evalInEnv(env, tune):
+                case Tune(notes):
+                    return Tune(notes[::-1])
+                case _:
+                    raise EvalError("expected tune")
 
         # Invalid Expression
         # ------------------
@@ -688,7 +738,10 @@ def evalInEnv(env: Env[Literal], e: Expr) -> (Literal|Tune):
 
     return # type: ignore
 
-def writeMidi(notes: list[Note]):
+def writeMidi(notes: list[Note], name: str):
+    if os.name != 'posix':
+        raise RuntimeError("non-POSIX system")
+
     if writeMidi:
         track = 0
         channel = 0
@@ -709,11 +762,23 @@ def writeMidi(notes: list[Note]):
 
             time = time + note.duration
 
-        with open("tune.mid", "wb") as output_file:
+        with open(name, "wb") as output_file:
             MyMIDI.writeFile(output_file)
 
-def runMidi():
-    pass
+
+def runMidi(name: str):
+    if os.name != 'posix':
+        raise RuntimeError("non-POSIX system")
+
+    if os.system("which vlc > /dev/null 2>&1") != 0:
+        raise RuntimeError("VLC player not found")
+
+    if os.system(f"[ -f {name} ] > /dev/null 2>&1") != 0:
+        raise RuntimeError(f"no midi file {name}")
+
+    if os.system(f"vlc {name} > /dev/null 2>&1"):
+        raise RuntimeError(f"VLC error")
+
 
 def run(e: Expr, pretty = True, writeMidi: bool = False):
     if pretty:
