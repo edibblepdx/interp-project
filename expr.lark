@@ -42,11 +42,13 @@ UNIX_PATH_NOSPACE: /[^\0 ]+/ # UNIX file path but modified to exclude spaces
          | tune_exp
 
 # for the keyword commands on tunes
-?tune_exp: "write" exp UNIX_PATH_NOSPACE -> write   //= DOMAIN =//
-         | "run" UNIX_PATH_NOSPACE -> run           //= DOMAIN =//
-         | "repeat" exp exp -> repeat               //= DOMAIN =//
-         | "reverse" exp -> reverse                 //= DOMAIN =//
+?tune_exp: "write" join_exp ":" UNIX_PATH_NOSPACE -> write      //= DOMAIN =//
+         | "run" UNIX_PATH_NOSPACE -> run                   //= DOMAIN =//
+         | "repeat" join_exp ":" join_exp -> repeat         //= DOMAIN =//
+         | "reverse" join_exp -> reverse                    //= DOMAIN =//
          | join_exp
+
+#?tune_exp: join_exp
 
 ?join_exp: arith_exp1 "|" join_exp -> join  //= DOMAIN =//
          | arith_exp1

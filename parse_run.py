@@ -19,9 +19,9 @@ from interp import (
 )
 
 
-parser = Lark(Path('expr.lark').read_text(), parser='earley', ambiguity='explicit')
+#parser = Lark(Path('expr.lark').read_text(), parser='earley', ambiguity='explicit')
 #for checking against ambiguity:
-#parser = Lark(Path('expr.lark').read_text(), parser='lalr', strict='True')
+parser = Lark(Path('expr.lark').read_text(), parser='lalr', strict='True', debug='True')
 
 #to test ambiguities
 #from lark import Lark, Tree, Transformer

@@ -311,6 +311,7 @@ class Read:
     def __str__(self) -> str:
         return f"read"
 
+
 @dataclass
 class Write:
     """Write Midi"""
@@ -444,21 +445,13 @@ def evalInEnv(env: Env[Literal], e: Expr) -> (Literal|Tune):
                 case (l, r) if isInt(l, r):
                     return l * r
                 # DOMAIN SPECIFIC EXTENSION
-                # change duration of each note by inverse of val if positive
-                # else if negative scale by abs(val)
-                case (Tune(notes), val) if isInt(val):
-                    if r == 0:
-                        raise EvalError("divide by zero")
-                    if r > 0:
-                        new_notes = [
-                            Note(note.pitch, note.duration // val)
-                            for note in notes
-                        ]
-                    else:
-                        new_notes = [
-                            Note(note.pitch, note.duration * abs(val))
-                            for note in notes
-                        ]
+                case (Tune(notes), v) if isInt(v):
+                    if v <= 0:
+                        raise EvalError("duration modifier must be positive")
+                    new_notes = [
+                        Note(note.pitch, note.duration * v)
+                        for note in notes
+                    ]
                     return Tune(new_notes)
                 case _:
                     raise EvalError("multiplication of non-integers")
@@ -469,6 +462,19 @@ def evalInEnv(env: Env[Literal], e: Expr) -> (Literal|Tune):
                     if r == 0:
                         raise EvalError("division by zero")
                     return l // r
+                # DOMAIN SPECIFIC EXTENSION
+                case (Tune(notes), v) if isInt(v):
+                    if v <= 0:
+                        raise EvalError("duration modifier must be positive")
+                    else:
+                        new_notes = [
+                            Note(
+                                note.pitch,
+                                d if (d := note.duration // v) != 0 else 1
+                            )
+                            for note in notes
+                        ]
+                    return Tune(new_notes)
                 case _:
                     raise EvalError("division of non-integers")
 

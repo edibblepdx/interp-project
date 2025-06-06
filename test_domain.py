@@ -7,7 +7,8 @@ import interp
 from interp import (
     Lit, Add, Sub, Mul, Div, Neg, And, Or, Not, Eq
    , Neq, Lt, Gt, Leq, Geq, If, Let, Name, Note, Join
-   , Slice, Letfun, App, Tune
+   , Slice, Letfun, App, Tune, Show, Write, Run
+   , Repeat, Reverse
 )
 
 from io import StringIO
@@ -70,28 +71,30 @@ class TestEvalDomain(TestCase):
         # Note * 2
         # => Tune
         expr = Mul(Note("A", 2), Lit(2))
-        self.expect(expr, Tune([Note("A", 1)]))
+        self.expect(expr, Tune([Note("A", 4)]))
 
-    # Multiply (change duration)
+    # Multiply (change duration) EXCEPT
     def test_06(self):
         # Note * -2
         # => Tune
         expr = Mul(Note("A", 2), Neg(Lit(2)))
-        self.expect(expr, Tune([Note("A", 4)]))
+        with self.assertRaises(Exception):
+            interp.eval(expr)
 
     # Multiply (change duration)
     def test_07(self):
         # Tune * 2
         # => Tune
         expr = Mul(Join(Note("A", 2), Note("B", 4)), Lit(2))
-        self.expect(expr, Tune([Note("A", 1), Note("B", 2)]))
+        self.expect(expr, Tune([Note("A", 4), Note("B", 8)]))
 
-    # Multiply (change duration)
+    # Multiply (change duration) EXCEPT
     def test_08(self):
         # Tune * -2
         # => Tune
         expr = Mul(Join(Note("A", 2), Note("B", 4)), Neg(Lit(2)))
-        self.expect(expr, Tune([Note("A", 4), Note("B", 8)]))
+        with self.assertRaises(Exception):
+            interp.eval(expr)
 
     # Note Equality
     def test_09(self):
@@ -187,6 +190,36 @@ class TestEvalDomain(TestCase):
         self.expect(expr, True)
         expr = Neq(Lit(42), Lit(42))
         self.expect(expr, False)
+
+    def test_22(self):
+        # Repeat Tune
+        expr = Repeat(Lit(1), Note("A", 1))
+        self.expect(expr, Tune([Note("A", 1)]))
+        expr = Repeat(Lit(3), Note("A", 1))
+        self.expect(expr, Tune([Note("A", 1), Note("A", 1), Note("A", 1)]))
+        expr = Repeat(Lit(2), Join(Note("A", 1), Note("B", 2)))
+        self.expect(expr, Tune([Note("A", 1), Note("B", 2), Note("A", 1), Note("B", 2)]))
+
+    def test_23(self):
+        # Reverse Tune
+        expr = Reverse(Note("A", 1))
+        self.expect(expr, Tune([Note("A", 1)]))
+        expr = Reverse(Join(Note("A", 1), Note("B", 2)))
+        self.expect(expr, Tune([Note("B", 2), Note("A", 1)]))
+
+    def test_23(self):
+        # Divide Note
+        expr = Div(Note("A", 1), Lit(10))
+        self.expect(expr, Tune([Note("A", 1)]))
+        expr = Div(Note("A", 10), Lit(2))
+        self.expect(expr, Tune([Note("A", 5)]))
+
+    def test_23(self):
+        # Divide Tune
+        expr = Div(Join(Note("A", 1), Note("B", 2)), Lit(10))
+        self.expect(expr, Tune([Note("A", 1), Note("B", 1)]))
+        expr = Div(Join(Note("A", 10), Note("B", 20)), Lit(2))
+        self.expect(expr, Tune([Note("A", 5), Note("B", 10)]))
 
 
 class TestParseDomain(TestCase):
@@ -298,6 +331,53 @@ class TestParseDomain(TestCase):
         self.parse(
             "let t1 = (A, 1) in letfun f(t2) = t1 | t2 in f((B, 2)) end end",
             Let("t1", Note("A", 1), Letfun("f", "t2", Join(Name("t1"), Name("t2")), App(Name("f"), Note("B", 2))))
+        )
+
+    def test_17(self):
+        self.parse(
+            "let t1 = (A, 1) | (B, 2) in show t1 end",
+            Let("t1", Join(Note("A", 1), Note("B", 2)), Show(Name("t1")))
+        )
+
+    def test_18(self):
+        self.parse(
+            "let t1 = (A, 1) | (B, 2) in write t1 : tune.mid end",
+            Let("t1", Join(Note("A", 1), Note("B", 2)), Write(Name("t1"), "tune.mid"))
+        )
+
+    def test_19(self):
+        self.parse(
+            "run tune.mid",
+            Run("tune.mid")
+        )
+
+    def test_20(self):
+        self.parse(
+            "if write (A, 1) | (B, 2) : tune.mid"
+                " then run tune.mid"
+                " else false",
+            If(Write(Join(Note("A", 1), Note("B", 2)), "tune.mid"),
+                Run("tune.mid"),
+                Lit(False)
+            )
+        )
+
+    def test_21(self):
+        self.parse(
+            "write ((A, 1) | (B, 2))[1:2] : tune.mid",
+            Write(Slice(Join(Note("A", 1), Note("B", 2)), Lit(1), Lit(2)), "tune.mid")
+        )
+
+    def test_22(self):
+        self.parse(
+            "repeat 5 : (A, 1)",
+            Repeat(Lit(5), Note("A", 1))
+        )
+
+    def test_23(self):
+        self.parse(
+            "let a = (A, 1) in repeat 5 : a end",
+            Let("a", Note("A", 1), Repeat(Lit(5), Name("a")))
         )
 
 
