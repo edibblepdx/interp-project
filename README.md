@@ -1,12 +1,3 @@
-# interp-project
-
-# Changes to Milestone 1
-
-- `Tune` is no longer a literal type; it is now a value type. `Note` now exists
-  as the literal type.
-
-- There is a new slice operator which can be used as `Tune[begin:end]`
-
 # Requirements
 
 ```
@@ -56,21 +47,39 @@ slowed down with `*` on the right. Positive integers will speed up the tune and
 negative integers will slow down the tune. Tunes and Notes can be sliced with
 `[start:end]` to get smaller tunes.
 
+# REPL
+
+`repl.py` has a driver to run expressions. There is a `dofile` command in the REPL that will parse and run a file. You can try running some examples from the `examples/` directory. `>` is an input prompt and expressions can be extended onto multiple lines with a backslash `\`, after which the prompt changes to `>>`.
+
 # Operator Summary
 
-- Tunes can be multiplied on the right by an integer to speed up or slow down the
-  Tune. Positive integers will speed up the Tune and negative integers will slow
-  down the Tune.
+- `tune * positive_int` to speed up the Tune
 
-- Tunes can be added to on the right by an integer to transpose their pitch
-  by an integer number of half-steps.
+- `tune / positive_int` to slow down the Tune.
+  Durations of 0 are rounded up to 1.
 
-- Tunes can be compared for strict equality.
+- `tune + int` to transpose up their pitch
+  by an integer number of half-steps (wrapping).
 
-- Tunes and Notes can be joined to create longer Tunes.
+- `tune - int` to transpose down their pitch
+  by an integer number of half-steps (wrapping).
 
-- Tunes and Notes (since Notes evaluate to Tunes) can be sliced to get a subset
+- `tune == tune` `tune != tune` to compare for strict equality.
+
+- `tune | tune` `note | note` can be joined to create longer Tunes.
+
+- `tune[start:end]` Tunes and Notes (since Notes evaluate to Tunes) can be sliced to get a subset
   of a Tune.
+
+- `show tune` will create a temporary file and run the tune.
+
+- `write tune:filename` will write a tune to a midi file.
+
+- `run filename` will run a midi file.
+
+- `repeat int:tune` will repeat a tune a specified number of times.
+
+- `reverse tune` will reverse a tune.
 
 # Operator Precedence
 
@@ -83,11 +92,12 @@ literals name parenthesized-expr func-application let-in-end letfun-in-end
 * /
 + -
 | (join)
+write run repeat reverse
 == < > <= >=
 !
 &&
 ||
-if-then-else
+if-then-else show :=
 ```
 
 `|` is right-associative. `==`, `<`, `>`, `<=`, `>=` are non-associative.
@@ -95,5 +105,4 @@ And all remaining binary operators are left-associative
 
 # Test File
 
-- `interp.py` and `parse_run.py` each import and run their respective TestCase
-  from `test_domain.py`.
+`interp.py` and `parse_run.py` each import and run their respective TestCase from `test_domain.py`.
