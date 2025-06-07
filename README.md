@@ -106,3 +106,7 @@ And all remaining binary operators are left-associative
 # Test File
 
 `interp.py` and `parse_run.py` each import and run their respective TestCase from `test_domain.py`.
+
+# Running MIDIs
+
+The program will check to see if you have VLC player installed to run all midis. Writing will work on all systems, but running is POSIX systems only.
