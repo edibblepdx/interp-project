@@ -1,0 +1,12 @@
+# start the repl in the top level directory and run this file with
+# dofile examples/two.example
+
+let a = (A, 1) in
+    a := a * 2;
+    a := repeat 2:a;
+    a := a | (B, 2) | (C, 1);
+    write a:tune.mid;
+    run tune.mid;
+    a := reverse a;
+    write a:tune.mid;
+    run tune.mid end

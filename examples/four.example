@@ -1,0 +1,6 @@
+# start the repl in the top level directory and run this file with
+# dofile examples/two.example
+
+letfun f(tune) =
+    tune | (repeat 5:(tune[0:1]))
+in show f((D, 1) | (B, 2)) end

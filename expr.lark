@@ -7,7 +7,7 @@
 %ignore SH_COMMENT
 
 NAME: /(?!show|write|run|repeat|reverse)([_a-zA-Z])([_a-zA-Z0-9])*/
-UNIX_PATH_NOSPACE: /[^\0 ]+/ # UNIX file path but modified to exclude spaces
+UNIX_PATH_NOSPACE: /[^\0; ]+/ # UNIX file path but modified to exclude spaces and semicolons
 
 ?start: exp
 
@@ -42,7 +42,7 @@ UNIX_PATH_NOSPACE: /[^\0 ]+/ # UNIX file path but modified to exclude spaces
          | tune_exp
 
 # for the keyword commands on tunes
-?tune_exp: "write" join_exp ":" UNIX_PATH_NOSPACE -> write      //= DOMAIN =//
+?tune_exp: "write" join_exp ":" UNIX_PATH_NOSPACE -> write  //= DOMAIN =//
          | "run" UNIX_PATH_NOSPACE -> run                   //= DOMAIN =//
          | "repeat" join_exp ":" join_exp -> repeat         //= DOMAIN =//
          | "reverse" join_exp -> reverse                    //= DOMAIN =//

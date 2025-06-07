@@ -1,0 +1,19 @@
+# start the repl in the top level directory and run this file with
+# dofile examples/two.example
+
+let a = (A, 1) in
+    show a;
+    a := a | (B, 1) | (C, 1);
+    show a;
+    a := a * 2;
+    show a;
+    a := a / 2;
+    show a;
+    show a[1:2];
+    a := (repeat 2:a[0:1]) | a | (repeat 2 : (reverse a[1:3]));
+    show a;
+    a := a + 5;
+    show a;
+    a := a - 1;
+    a := reverse a;
+    show a end

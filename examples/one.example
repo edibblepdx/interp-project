@@ -1,0 +1,12 @@
+# start the repl in the top level directory and run this file with
+# dofile examples/one.example
+
+let a = (A, 1) | (B, 1) | (C, 1) in
+    let b = repeat 5:a in
+        let c = reverse a in
+            show c
+        end;
+        show b
+    end;
+    show a
+end
